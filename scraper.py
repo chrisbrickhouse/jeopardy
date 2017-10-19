@@ -8,8 +8,38 @@ from bs4 import BeautifulSoup as soup
 
 
 class Game:
+    """An object that represents a Jeopardy game and structures related data.
+    
+    The Game class creates an object that structures and contains data on a 
+    given Jeopardy game from the j-archive. It contains data related to the 
+    game as a whole and contains all of the clues (represented as Clue objects)
+    within it.
+    
+    Attributes:
+        id_         The game id used in the j-archive url.
+        title       The title of the game, including the game number and date.
+        game_number The number of the game in sequence from the first, different
+                      from the id_. Game ID is j-archive specific, but 
+                      game_number is numbered from the start of Jeopardy.
+        date        The date the game aired in the format '(D)D Mon YYYY'.
+        day         The day of the month on which the game aired.
+        month       The month in which the game aired.
+        year        The year in which the game aired.
+        raw_clues   The bs4 tag elements for each of the clues.
+        categories  A dictionary, with round names as keys, containing lists of
+                      category names.
+        TO ADD:
+            clues   A list of Clue objects associated with this game
+            *       Various objects related to score statistics and team 
+                      batting avgerage.
+    
+    Methods:
+        __init__    Initializes the game object.
+    """
+    
     title_regex = re.compile(r'#(\d+).*?([a-zA-Z]+), ([a-zA-Z]+) (\d+), (\d+)')
     rounds = ['jeopardy_round','double_jeopardy_round','final_jeopardy_round']
+    
     def __init__(self,url,browser):
         """Initialize important meta-data on the game."""
         browser.get(url)
@@ -67,9 +97,42 @@ class Game:
 
         
 class Clue:
+    """An object representing and containing data on a particular Jeopardy clue.
+    
+    This class and its associated methods compile and structure data on a 
+    Jeopardy clue ib relation to the game object it is associated with. It is 
+    called by Game._parse_clues but can be constructed individually if given a 
+    proper bs4 tag object and a game object.
+    
+    Attributes:
+        tag_obj       The bs4 tag object from parsing the j-archive data which
+                        contains the associated data for the clue.
+        game          The Game object this clue is associated with.
+        round_        The round this clue is from.
+        category      The name of the category for the clue.
+        value         How much is won (or lost) given an (in)correct response.
+                        This is usually the facial value of the clue but for
+                        Daily Doubles (ie, daily_double == True), it is the 
+                        amount the contestant wagered.
+        row           The row the clue is found on, indexed from 1, not 0.
+        column        The column the clue is found on, indexed from 1.
+        daily_double  A boolean stating whether the clue was a Daily Double.
+        text          The text of the clue.
+        annotation    Any associated commentary with the clue other than the
+                        correct response.
+        target        The correct response.
+        correct       Whether any participant answered the clue correctly.
+        
+    Methods:
+        __init__      Initializes the Clue object and calls the various 
+                        functions to set the attributes.
+        
+    """
+    
     response_regex = re.compile(r"stuck', '(.*)<em")
     wasCorrect_regex = re.compile(r'<td class="(right|wrong)">(.*?)<\/td>')
     target_regex = re.compile(r"correct_response.+?>(.*)</em>")
+    
     def __init__(self,bs4_tag,game):
         self.game = game
         self.tag_obj = bs4_tag
