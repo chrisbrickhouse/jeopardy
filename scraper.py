@@ -50,7 +50,7 @@ class Game:
             'div',
             attrs={'id':'game_title'}
         ).text
-        num,dow,mon,day,year = re.search(title_regex,game_title).groups()
+        num,dow,mon,day,year = re.search(title_regex,self.title).groups()
         self.game_number = num
         self.weekday = dow
         self.month = mon
@@ -134,8 +134,8 @@ class Clue:
     target_regex = re.compile(r"correct_response.+?>(.*)</em>")
     
     def __init__(self,bs4_tag,game):
-        self.game = game
         self.tag_obj = bs4_tag
+        self.game = game
         self._set_round() 
         self.order_num = int(
             self.tag_obj.find(
