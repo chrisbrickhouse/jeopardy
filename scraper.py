@@ -2,7 +2,6 @@ __version__ = '0.1.0'
 __author__ = 'Christian Brickhouse'
 
 import re
-import difflib
 
 from selenium import webdriver
 from bs4 import BeautifulSoup as soup
@@ -29,8 +28,10 @@ class Game:
         raw_clues   The bs4 tag elements for each of the clues.
         categories  A dictionary, with round names as keys, containing lists of
                       category names.
+        clues       A dictionary, with round names as keys, containing lists of
+                      all the Clue objects for that round.
+                      
         TO ADD:
-            clues   A list of Clue objects associated with this game
             *       Various objects related to score statistics and team 
                       batting avgerage.
     
@@ -164,6 +165,7 @@ class Clue:
                 self.order_num = None
         self._set_value()
         self._set_text()
+        self._set_responses()
         
     def _set_round(self):
         """Set the round the clue comes from.
@@ -242,22 +244,28 @@ class Clue:
     def _set_responses(self):
         """Parse the response text and set various response variables."""
         annotation = None
-        for div in self.tag_obj.find_all('div'):
+        tag = self.tag_obj
+        if self.round_ == 'final_jeopardy_round':
+            for parent in self.tag_obj.parents:
+                if parent.has_attr('id'):
+                    if parent['id'] == 'final_jeopardy_round':
+                        tag = parent
+        for div in tag.find_all('div'):
             if div.has_attr('onmouseover'):
                 annotation = div['onmouseover']
                 break
         if annotation == None:
             raise ValueError('Clue has no response?')
         try:
-            self.target = re.search(target_regex,annotation).group(1)
+            self.target = re.search(self.target_regex,annotation).group(1)
         except AttributeError:
-            raise AttributeError('Clue has no correct response?')
-        self.annotation = re.search(response_regex,annotation).group(1)
-        responses = re.findall(wasCorrect_regex,annotation)
+            raise ValueError('Clue has no correct response?')
+        self.annotation = re.search(self.response_regex,annotation).group(1)
+        responses = re.findall(self.wasCorrect_regex,annotation)
         if responses == []:
-            print('Unknown whether response was correct or not.\n\
-            Here\'s diagnostic info:\n\tGame id: %s\n\
-            \tDate: %s\n\tRound: %s\n\tClue coords (row,col): %s, %s' % (
+            print('Unknown whether response was correct or not.\n' +
+            'Here\'s diagnostic info:\n\tGame id: %s\n' +
+            '\tDate: %s\n\tRound: %s\n\tClue coords (row,col): %s, %s' % (
                 self.game.id_,
                 self.game.date,
                 self.round_,
@@ -266,6 +274,7 @@ class Clue:
             ))
             self.correct = None
             return()
+        self.correct = None
         for response in responses:
             player = response[1]
             if response[0] == 'right':
