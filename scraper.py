@@ -2,6 +2,7 @@ __version__ = '0.1.0'
 __author__ = 'Christian Brickhouse'
 
 import re
+import difflib
 
 from selenium import webdriver
 from bs4 import BeautifulSoup as soup
@@ -74,8 +75,17 @@ class Game:
         """Create a Clue object for each clue in self.raw_clues"""
         if len(self.raw_clues) == 0:
             raise ValueError('This game has no clues?')
+        clues = []
         for clue in self.raw_clues:
-            Clue(clue,self)
+            clues.append(Clue(clue,self))
+        j = [x for x in clues if x.round_ == 'jeopardy_round']
+        dj = [x for x in clues if x.round_ == 'double_jeopardy_round']
+        fj = [x for x in clues if x.round_ == 'final_jeopardy_round']
+        self.clues = {
+            'jeopardy_round':j,
+            'double_jeopardy_round':dj,
+            'final_jeopardy_round':fj
+        }
             
     def _set_categories(self):
         """Create data structure of categories used in the game. 
@@ -90,7 +100,8 @@ class Game:
             'final_jeopardy_round':[]
         }
         for round_ in self.rounds:
-            gen = self._parsed_html.body.find_all(
+            round_tag = self._parsed_html.body.find('div',attrs={'id':round_})
+            gen = round_tag.find_all(
                 'td',
                 attrs={'class':'category_name'}
                 ) # needs better name than 'gen'
@@ -139,13 +150,18 @@ class Clue:
     def __init__(self,bs4_tag,game):
         self.tag_obj = bs4_tag
         self.game = game
-        self._set_round() 
-        self.order_num = int(
-            self.tag_obj.find(
-                'td',
-                attrs={'class':'clue_order_number'}
-            ).text
-        )
+        self._set_round()
+        try:
+            self.order_num = int(
+                self.tag_obj.find(
+                    'td',
+                    attrs={'class':'clue_order_number'}
+                ).text
+            )
+        except AttributeError:
+            if self.round_ != 'final_jeopardy_round':
+                print('Unknown clue order in game %s, %s'%(self.game.title,self.round_))
+                self.order_num = None
         self._set_value()
         self._set_text()
         
@@ -168,6 +184,8 @@ class Clue:
         won or lost by a correct or incorrect response. It determines whether
         the clue is a daily double and sets self.daily_double as a boolean.
         """
+        if self.round_ == 'final_jeopardy_round':
+            return()
         val = self.tag_obj.find(
             'td',
             attrs={'class':'clue_value'}
@@ -175,16 +193,16 @@ class Clue:
         if val == None:
             val = self.tag_obj.find(
                 'td',
-                attrs={'class':'clue_value'}
+                attrs={'class':'clue_value_daily_double'}
             )
             if val == None:
                 raise ValueError('Clue has no value?')
             else:
                 self.daily_double = True
-                val = val[4:]  # remove the 'DD: ' that precedes DD clue values.
+                self.value = val.text[5:]  # remove the 'DD: $' that precedes DD clue values.
         else:
             self.daily_double = False
-        self.value = int(val.strip().strip('$'))
+            self.value = int(val.text.strip().strip('$'))
         
     def _set_text(self):
         """Set the text of the clue."""
@@ -194,14 +212,14 @@ class Clue:
         
     def _set_category(self,id_str):
         """Set the category of the clue and its coordinates on the board."""
-        if id_str is 'clue_FJ':
+        if id_str == 'clue_FJ':
             rnd = 'FJ'
         else:
             rnd,col,row = id_str.split('_')[1:]
         if (
-                (rnd == 'J' and self.round_ is not 'jeopardy_round') or 
-                (rnd == 'DJ' and self.round_ is not 'double_jeopardy_round') or
-                (rnd == 'FJ' and self.round_ is not 'final_jeopardy_round')
+                (rnd == 'J' and self.round_ != 'jeopardy_round') or 
+                (rnd == 'DJ' and self.round_ != 'double_jeopardy_round') or
+                (rnd == 'FJ' and self.round_ != 'final_jeopardy_round')
         ):
             print('Rounds do not match for %s,\n\
             defaulting to round used in coordinates.' % id_str)
@@ -211,9 +229,14 @@ class Clue:
                 self.round_ = 'double_jeopardy_round'
             elif rnd == 'FJ':
                 self.round_ = 'final_jeopardy_round'
-        self.row = int(row)
-        self.column = int(column)
         cats = self.game.categories[self.round_]
+        if rnd == 'FJ':
+            self.row = None
+            self.column = None
+            self.category = cats[0]
+            return()
+        self.row = int(row)
+        self.column = int(col)
         self.category = cats[self.column-1]
     
     def _set_responses(self):
@@ -247,7 +270,7 @@ class Clue:
             player = response[1]
             if response[0] == 'right':
                 self.correct = True
-            elif response[0] == 'wrong' and self.correct is not True:
+            elif response[0] == 'wrong' and self.correct != True:
                 self.correct = False
             else:
                 self.correct = None
