@@ -63,7 +63,7 @@ class Game:
     def _set_raw_clues(self):
         """Add all bs4 Tag objects for clues to a list, self.raw_clues"""
         self.raw_clues = parsed_html.body.find_all('td',attrs={'class':'clue'})
-        if self.raw_clues = None or len(self.raw_clues) == 0:
+        if self.raw_clues == None or len(self.raw_clues) == 0:
             raise ValueError('This game has no clues?')
         return()
         
@@ -196,17 +196,17 @@ class Clue:
         else:
             rnd,col,row = id_str.split('_')[1:]
         if (
-                (rnd = 'J' and self.round_ is not 'jeopardy_round') or 
-                (rnd = 'DJ' and self.round_ is not 'double_jeopardy_round') or
-                (rnd = 'FJ' and self.round_ is not 'final_jeopardy_round')
+                (rnd == 'J' and self.round_ is not 'jeopardy_round') or 
+                (rnd == 'DJ' and self.round_ is not 'double_jeopardy_round') or
+                (rnd == 'FJ' and self.round_ is not 'final_jeopardy_round')
         ):
             print('Rounds do not match for %s,\n\
             defaulting to round used in coordinates.' % id_str)
             if rnd == 'J':
                 self.round_ = 'jeopardy_round'
-            elif rnd = 'DJ':
+            elif rnd == 'DJ':
                 self.round_ = 'double_jeopardy_round'
-            elif rnd = 'FJ':
+            elif rnd == 'FJ':
                 self.round_ = 'final_jeopardy_round'
         self.row = int(row)
         self.column = int(column)
@@ -230,22 +230,22 @@ class Clue:
         responses = re.findall(wasCorrect_regex,annotation)
         if responses == []:
             print('Unknown whether response was correct or not.\n\
-            Continuing regardless, here\'s diagnostic info:\n\tGame id: %s\n\
+            Here\'s diagnostic info:\n\tGame id: %s\n\
             \tDate: %s\n\tRound: %s\n\tClue coords (row,col): %s, %s' % (
                 self.game.id_,
                 self.game.date,
-                self.round_
+                self.round_,
                 self.row,
                 self.col
-            )
+            ))
             self.correct = None
-            continue
+            return()
         for response in responses:
             player = response[1]
             if response[0] == 'right':
                 self.correct = True
             elif response[0] == 'wrong' and self.correct is not True:
-                self.correct = False:
+                self.correct = False
             else:
                 self.correct = None
 
