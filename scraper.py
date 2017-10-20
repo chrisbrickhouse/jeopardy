@@ -45,12 +45,12 @@ class Game:
         browser.get(url)
         self.id_ = url.split('=')[-1]
         self._page_source = browser.page_source
-        self._parsed_html = soup(page_source,"html.parser")
+        self._parsed_html = soup(self._page_source,"html.parser")
         self.title = self._parsed_html.body.find(
             'div',
             attrs={'id':'game_title'}
         ).text
-        num,dow,mon,day,year = re.search(title_regex,self.title).groups()
+        num,dow,mon,day,year = re.search(self.title_regex,self.title).groups()
         self.game_number = num
         self.weekday = dow
         self.month = mon
@@ -62,7 +62,10 @@ class Game:
         
     def _set_raw_clues(self):
         """Add all bs4 Tag objects for clues to a list, self.raw_clues"""
-        self.raw_clues = parsed_html.body.find_all('td',attrs={'class':'clue'})
+        self.raw_clues = self._parsed_html.body.find_all(
+            'td',
+            attrs={'class':'clue'}
+        )
         if self.raw_clues == None or len(self.raw_clues) == 0:
             raise ValueError('This game has no clues?')
         return()
@@ -86,13 +89,13 @@ class Game:
             'double_jeopardy_round':[],
             'final_jeopardy_round':[]
         }
-        for round_ in rounds:
+        for round_ in self.rounds:
             gen = self._parsed_html.body.find_all(
                 'td',
                 attrs={'class':'category_name'}
-                )
+                ) # needs better name than 'gen'
             for category in gen:
-                catsByRound[round_].append(category.lower())
+                catsByRound[round_].append(category.text.lower())
         self.categories = catsByRound
 
         
