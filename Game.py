@@ -1,9 +1,8 @@
-__version__ = '0.2.0'
+__version__ = '0.2.1'
 __author__ = 'Christian Brickhouse'
 
 import re
 
-from selenium import webdriver
 from bs4 import BeautifulSoup as soup
 
 
