@@ -42,11 +42,10 @@ class Game:
     title_regex = re.compile(r'#(\d+).*?([a-zA-Z]+), ([a-zA-Z]+) (\d+), (\d+)')
     rounds = ['jeopardy_round','double_jeopardy_round','final_jeopardy_round']
     
-    def __init__(self,url,browser):
+    def __init__(self,page_source,url):
         """Initialize important meta-data on the game."""
-        browser.get(url)
         self.id_ = url.split('=')[-1]
-        self._page_source = browser.page_source
+        self._page_source = page_source
         self._parsed_html = soup(self._page_source,"html.parser")
         self.title = self._parsed_html.body.find(
             'div',
@@ -287,3 +286,5 @@ class Clue:
 
 url = 'http://www.j-archive.com/showgame.php?game_id=1'
 browser = webdriver.PhantomJS()
+browser.get(url)
+browser.page_source
