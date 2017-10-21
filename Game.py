@@ -284,7 +284,3 @@ class Clue:
                 self.correct = None
 
 
-url = 'http://www.j-archive.com/showgame.php?game_id=1'
-browser = webdriver.PhantomJS()
-browser.get(url)
-browser.page_source
