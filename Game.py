@@ -1,4 +1,4 @@
-__version__ = '0.2.1'
+__version__ = '0.3.0'
 __author__ = 'Christian Brickhouse'
 
 import re
@@ -59,6 +59,7 @@ class Game:
         self.year = year
         self._set_raw_clues()
         self._set_categories()
+        self._parse_clues()
         
     def _set_raw_clues(self):
         """Add all bs4 Tag objects for clues to a list, self.raw_clues"""
@@ -281,5 +282,16 @@ class Clue:
                 self.correct = False
             else:
                 self.correct = None
+        self._clean_annotations()
 
+    def _clean_annotations(self):
+        annotation = self.annotation
+        if self.round_ == 'final_jeopardy_round':
+            pass  # Needs to be handled separately.
+            return()  # The rest is only for non-final clues.
+        quotation = re.findall(r'\((.*?)\)',annotation)
+        self.responses=[]
+        for match in quotation:
+            speaker,speech = match.split(':')
+            self.responses.append((speaker.strip(),speech.strip()))
 
