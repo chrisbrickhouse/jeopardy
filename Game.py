@@ -1,4 +1,4 @@
-__version__ = '0.3.0'
+__version__ = '0.4.0-dev'
 __author__ = 'Christian Brickhouse'
 
 import re
@@ -77,6 +77,8 @@ class Game:
             raise ValueError('This game has no clues?')
         clues = []
         for clue in self.raw_clues:
+            if len(clue.contents) == 1:
+                continue  # Skip clues that went unrevealed.
             clues.append(Clue(clue,self))
         j = [x for x in clues if x.round_ == 'jeopardy_round']
         dj = [x for x in clues if x.round_ == 'double_jeopardy_round']
