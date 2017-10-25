@@ -294,6 +294,8 @@ class Clue:
         quotation = re.findall(r'\((.*?)\)',annotation)
         self.responses=[]
         for match in quotation:
-            speaker,speech = match.split(':')
+            msplit = match.split(':')
+            speaker = msplit[0]
+            speech = ':'.join(msplit[1:])
             self.responses.append((speaker.strip(),speech.strip()))
 

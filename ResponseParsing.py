@@ -23,7 +23,7 @@ class JeopardyParser():
         return(lex)
         
     def parse(self,sentence):
-        sentence = clean_sentence(sentence)
+        sentence = self.clean_sentence(sentence)
         parse, = self.Parser.raw_parse(sentence)
         return(parse)
         

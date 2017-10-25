@@ -8,15 +8,16 @@ from selenium import webdriver
 import Game
 import ResponseParsing
 
+wait = 2
 games=[]
 browser = webdriver.PhantomJS()
 request_time = 0
 jparse = ResponseParsing.JeopardyParser()
-for i in range(1,11):
+for i in range(1,10):
     print(i)
-    if (time.time() - request_time) < 10:
-        print('Requesting too fast, waiting 10 seconds...')
-        time.sleep(15) 
+    if (time.time() - request_time) < wait:
+        print('Requesting too fast, waiting %s seconds...'%wait)
+        time.sleep(wait) 
         print('Continuing')
     url = 'http://www.j-archive.com/showgame.php?game_id='+str(i)
     browser.get(url)
