@@ -1,4 +1,4 @@
-__version__ = '0.4.0-dev'
+__version__ = '0.4.0'
 __author__ = 'Christian Brickhouse'
 
 import re
