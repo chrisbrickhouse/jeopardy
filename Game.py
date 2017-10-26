@@ -57,9 +57,19 @@ class Game:
         self.day = day
         self.date = ' '.join([day,mon,year])
         self.year = year
-        self._set_raw_clues()
-        self._set_categories()
-        self._parse_clues()
+        notEmpty = self._set_raw_clues()
+        if notEmpty:
+            self._set_categories()
+            self._parse_clues()
+        else:
+            self.clues={}
+            for round_ in self.rounds:
+                self.clues[round_] = []
+            self.categories = {
+                'jeopardy_round':[],
+                'double_jeopardy_round':[],
+                'final_jeopardy_round':[]
+            }
         
     def _set_raw_clues(self):
         """Add all bs4 Tag objects for clues to a list, self.raw_clues"""
@@ -68,13 +78,15 @@ class Game:
             attrs={'class':'clue'}
         )
         if self.raw_clues == None or len(self.raw_clues) == 0:
-            raise ValueError('This game has no clues?')
-        return()
+            print('Game has no clues, moving on...')
+            self.raw_clues = []
+            return(False)
+        return(True)
         
     def _parse_clues(self):
         """Create a Clue object for each clue in self.raw_clues"""
         if len(self.raw_clues) == 0:
-            raise ValueError('This game has no clues?')
+            raise ValueError('Game has no clues yet _parse_clues was called?')
         clues = []
         for clue in self.raw_clues:
             if len(clue.contents) == 1:

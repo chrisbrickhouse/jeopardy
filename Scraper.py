@@ -9,6 +9,15 @@ from selenium import webdriver
 import Game
 import ResponseParsing
 
+
+def checkEnd(source, id_):
+    error_string = 'ERROR: No game %s in database.'%str(id_)
+    if error_string in source:
+        return(True)
+    else:
+        return(False)
+
+
 wait = 2
 games=[]
 browser = webdriver.PhantomJS()
@@ -16,14 +25,18 @@ request_time = 0
 jparse = ResponseParsing.JeopardyParser()
 for i in range(1,6000,100):
     i = i+randint(0,99)  # Random offset so pages picked are semi-random.
+    print(i)
+    url = 'http://www.j-archive.com/showgame.php?game_id='+str(i)
     if (time.time() - request_time) < wait:
         print('Requesting too fast, waiting %s seconds...'%wait)
         time.sleep(wait) 
         print('Continuing')
-    url = 'http://www.j-archive.com/showgame.php?game_id='+str(i)
     browser.get(url)
     request_time = time.time() 
     html = browser.page_source
+    if i > 5500:
+        if checkEnd(html,i):
+            break
     game = Game.Game(html,url)
     games.append(game)
 
