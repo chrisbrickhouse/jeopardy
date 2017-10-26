@@ -10,6 +10,43 @@ import Game
 import ResponseParsing
 
 
+class Scraper():
+    def __init__(self,default_wait=2):
+        self.games = []
+        self.browser = webdriver.PhantomJS()
+        if default_wait < 1:
+            raise ValueError('Wait must be at least 1 second as a courtesy.')
+        else:
+            self.default_wait = default_wait
+        self.jparse = ResponseParsing.JeopardyParser()
+        
+    def scrape(self,start,stop=None,step=1,wait=None,random=True):
+        request_time = 0
+        if type(wait) is not int:
+            wait = self.default_wait
+        if stop == None:
+            stop = start + 1
+        elif stop <= start:
+            raise ValueError('Stop must be greater than start value.')
+        for i in range(start,6000,100):
+            if random:
+                i = i+randint(0,step)  # Offset to pick semi-random pages.
+            print(i)
+            url = 'http://www.j-archive.com/showgame.php?game_id='+str(i)
+            if (time.time() - request_time) < wait:
+                print('Requesting too fast, waiting %s seconds...'%wait)
+                time.sleep(wait) 
+                print('Continuing')
+            browser.get(url)
+            request_time = time.time() 
+            html = browser.page_source
+            if i > 5500:
+                if checkEnd(html,i):
+                    break
+            game = Game.Game(html,url)
+            games.append(game)
+            
+
 def checkEnd(source, id_):
     error_string = 'ERROR: No game %s in database.'%str(id_)
     if error_string in source:
@@ -17,28 +54,6 @@ def checkEnd(source, id_):
     else:
         return(False)
 
-
-wait = 2
-games=[]
-browser = webdriver.PhantomJS()
-request_time = 0
-jparse = ResponseParsing.JeopardyParser()
-for i in range(1,6000,100):
-    i = i+randint(0,99)  # Random offset so pages picked are semi-random.
-    print(i)
-    url = 'http://www.j-archive.com/showgame.php?game_id='+str(i)
-    if (time.time() - request_time) < wait:
-        print('Requesting too fast, waiting %s seconds...'%wait)
-        time.sleep(wait) 
-        print('Continuing')
-    browser.get(url)
-    request_time = time.time() 
-    html = browser.page_source
-    if i > 5500:
-        if checkEnd(html,i):
-            break
-    game = Game.Game(html,url)
-    games.append(game)
 
 total = 0
 notQuestions = 0
