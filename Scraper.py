@@ -1,7 +1,8 @@
-__version__ = '0.4.0'
+__version__ = '0.5.0-dev'
 __author__ = 'Christian Brickhouse'
 
 import time
+from random import randint  # For testing purposes.
 
 from selenium import webdriver
 
@@ -13,8 +14,8 @@ games=[]
 browser = webdriver.PhantomJS()
 request_time = 0
 jparse = ResponseParsing.JeopardyParser()
-for i in range(1,10):
-    print(i)
+for i in range(1,6000,100):
+    i = i+randint(0,99)  # Random offset so pages picked are semi-random.
     if (time.time() - request_time) < wait:
         print('Requesting too fast, waiting %s seconds...'%wait)
         time.sleep(wait) 
@@ -39,5 +40,5 @@ for game in games:
                     tree = jparse.parse(sentence)[0]
                     total += 1
                     if not ResponseParsing.check_syntax(tree):
-                        print(repr(sentence))
+                        print(sentence)
                         notQuestions+=1
