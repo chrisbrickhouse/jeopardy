@@ -28,45 +28,57 @@ class Scraper():
             stop = start + 1
         elif stop <= start:
             raise ValueError('Stop must be greater than start value.')
-        for i in range(start,6000,100):
+        else:
+            stop += 1  # So range gives an i such that start <= i <= stop
+        for i in range(start,stop,step):
             if random:
-                i = i+randint(0,step)  # Offset to pick semi-random pages.
+                i = i+randint(0,step-1)  # Offset to pick semi-random pages.
             print(i)
             url = 'http://www.j-archive.com/showgame.php?game_id='+str(i)
             if (time.time() - request_time) < wait:
                 print('Requesting too fast, waiting %s seconds...'%wait)
                 time.sleep(wait) 
                 print('Continuing')
-            browser.get(url)
+            self.browser.get(url)
             request_time = time.time() 
-            html = browser.page_source
+            html = self.browser.page_source
             if i > 5500:
-                if checkEnd(html,i):
+                if self._checkEnd(html,i):
                     break
             game = Game.Game(html,url)
-            games.append(game)
+            self.games.append(game)
             
+    def parse_all(self):
+        total = 0
+        notQuestions = 0
+        for game in self.games:
+            for round_ in game.clues:
+                if round_ == 'final_jeopardy_round':
+                    continue
+                for clue in game.clues[round_]:
+                    if clue.annotation:
+                        for response in clue.responses:
+                            sentence = response[1]
+                            tree = jparse.parse(sentence)[0]
+                            total += 1
+                            if not ResponseParsing.check_syntax(tree):
+                                print(sentence)
+                                notQuestions+=1
 
-def checkEnd(source, id_):
-    error_string = 'ERROR: No game %s in database.'%str(id_)
-    if error_string in source:
-        return(True)
-    else:
-        return(False)
-
-
-total = 0
-notQuestions = 0
-for game in games:
-    for round_ in game.clues:
-        if round_ == 'final_jeopardy_round':
-            continue
-        for clue in game.clues[round_]:
-            if clue.annotation:
-                for response in clue.responses:
-                    sentence = response[1]
-                    tree = jparse.parse(sentence)[0]
-                    total += 1
-                    if not ResponseParsing.check_syntax(tree):
-                        print(sentence)
-                        notQuestions+=1
+    def _checkEnd(self, source, id_):
+        error_string = 'ERROR: No game %s in database.'%str(id_)
+        if error_string in source:
+            return(True)
+        else:
+            return(False)
+            
+    def __len__(self):
+        l = len(self.games)
+        return(l)
+        
+    def __str__(self):
+        text = []
+        for game in self.games:
+            text.append(game.title)
+        text = '\n'.join(text)
+        return(text)
