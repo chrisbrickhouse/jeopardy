@@ -35,14 +35,14 @@ git clone https://github.com/chrisbrickhouse/jeopardy.git
 
 To use the program, start a python shell and import the Scraper module and initialize it:
 
-```
+```python
 import Scraper
 scraper = Scraper.Scraper()
 ```
 
 To scraper pages, use the ```scrape``` method to indicate the page id (or range of ids) on the jeopardy archive:
 
-```
+```python
 scraper.scrape(5)  # Scrapes the J!-archive page whose pageid is 5
 
 scraper.scrape(5,10)  # Scrape pageids 5 through 10 (inclusive)
@@ -52,14 +52,14 @@ scraper.scrape(1,10,2)  # Scrape odd numbered page ids from 1 to 10
 
 Game objects are stored in the list ```scraper.games``` and game and clue info can be accessed from there:
 
-```
-\# Print the values for all clues
+```python
+# Print the values for all clues
 for game in scraper.games:
     for round_ in game.clues:
         for clue in game.clues[round_]:
             print(clue.value)
             
-\# Print only clues from games in October
+# Print only clues from games in October
 for game in scraper.games:
     if game.month == 'October':
         for round_ in game.clues:
