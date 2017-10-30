@@ -1,4 +1,4 @@
-__version__ = '0.5.0-dev'
+__version__ = '0.5.0'
 __author__ = 'Christian Brickhouse'
 
 import re
@@ -41,8 +41,14 @@ class Game:
     title_regex = re.compile(r'#(\d+).*?([a-zA-Z]+), ([a-zA-Z]+) (\d+), (\d+)')
     rounds = ['jeopardy_round','double_jeopardy_round','final_jeopardy_round']
     
-    def __init__(self,page_source,url):
+    def __init__(self,page_source=None,url=None,load=False,**kwargs):
         """Initialize important meta-data on the game."""
+        if load:
+            self.loaded = True
+            self.load(**kwargs)
+            return(None)
+        else:
+            self.loaded = False
         self.id_ = url.split('=')[-1]
         self._page_source = page_source
         self._parsed_html = soup(self._page_source,"html.parser")
@@ -70,6 +76,26 @@ class Game:
                 'double_jeopardy_round':[],
                 'final_jeopardy_round':[]
             }
+    
+    def load(self,**kwargs):
+        self.id_ = kwargs['id_']
+        self.title = kwargs['title']
+        self.game_number = kwargs['game_number']
+        self.weekday = kwargs['weekday']
+        self.month = kwargs['month']
+        self.day = kwargs['day']
+        self.date = kwargs['date']
+        self.year = kwargs['year']
+        self.categories = kwargs['categories']
+        self.clues = {
+            'jeopardy_round':[],
+            'double_jeopardy_round':[],
+            'final_jeopardy_round':[]
+        }
+        for clue in kwargs['clues']:
+            round_ = clue['round_']
+            self.clues[round_].append(Clue(game=self,load=True,**clue))
+            
         
     def _set_raw_clues(self):
         """Add all bs4 Tag objects for clues to a list, self.raw_clues"""
@@ -122,6 +148,25 @@ class Game:
             for category in gen:
                 catsByRound[round_].append(category.text.lower())
         self.categories = catsByRound
+        
+    def __dict__(self):
+        clues = []
+        for round_ in self.clues.keys():
+            for clue in self.clues[round_]:
+                clues.append(clue.__dict__())
+        dictionary = {
+            'id_':self.id_,
+            'title':self.title,
+            'game_number':self.game_number,
+            'weekday':self.weekday,
+            'month':self.month,
+            'day':self.day,
+            'date':self.date,
+            'year':self.year,
+            'categories':self.categories,
+            'clues':clues,
+        }
+        return(dictionary)
 
         
 class Clue:
@@ -161,7 +206,12 @@ class Clue:
     wasCorrect_regex = re.compile(r'<td class="(right|wrong)">(.*?)<\/td>')
     target_regex = re.compile(r"correct_response.+?>(.*)</em>")
     
-    def __init__(self,bs4_tag,game):
+    def __init__(self,bs4_tag=None,game=None,load=False,**kwargs):
+        if game and load:
+            self.loaded = True
+            self.load(game,**kwargs)
+            return(None)
+        self.loaded = False
         self.tag_obj = bs4_tag
         self.game = game
         self._set_round()
@@ -175,10 +225,26 @@ class Clue:
         except AttributeError:
             if self.round_ != 'final_jeopardy_round':
                 print('Unknown clue order in game %s, %s'%(self.game.title,self.round_))
-                self.order_num = None
+            self.order_num = None
         self._set_value()
         self._set_text()
         self._set_responses()
+        
+    def load(self,game,**kwargs):
+        self.game = game
+        self.round_ = kwargs['round_']
+        self.text = kwargs['text']
+        self.category = kwargs['category']
+        self.row = kwargs['row']
+        self.column = kwargs['column']
+        self.target = kwargs['target']
+        self.annotation = kwargs['annotation']
+        if self.round_ != 'final_jeopardy_round':
+            self.order_num = kwargs['order_num']
+            self.daily_double = kwargs['daily_double']
+            self.value = kwargs['value']
+            self.correct = kwargs['correct']
+            self.responses = kwargs['responses']
         
     def _set_round(self):
         """Set the round the clue comes from.
@@ -310,4 +376,31 @@ class Clue:
             speaker = msplit[0]
             speech = ':'.join(msplit[1:])
             self.responses.append((speaker.strip(),speech.strip()))
-
+    
+    def __dict__(self):
+        if self.round_ == 'final_jeopardy_round':
+            dictionary = {
+                'round_':self.round_,
+                'text':self.text,
+                'category':self.category,
+                'row':self.row,
+                'column':self.column,
+                'target':self.target,
+                'annotation':self.annotation,
+            }
+            return(dictionary)
+        dictionary = {
+            'round_':self.round_,
+            'order_num':self.order_num,
+            'daily_double':self.daily_double,
+            'value':self.value,
+            'text':self.text,
+            'row':self.row,
+            'column':self.column,
+            'category':self.category,
+            'target':self.target,
+            'annotation':self.annotation,
+            'correct':self.correct,
+            'responses':self.responses,
+        }
+        return(dictionary)

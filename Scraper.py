@@ -1,7 +1,8 @@
-__version__ = '0.5.0-dev'
+__version__ = '0.5.0'
 __author__ = 'Christian Brickhouse'
 
 import time
+import json
 from random import randint  # For testing purposes.
 
 from selenium import webdriver
@@ -71,6 +72,21 @@ class Scraper():
             return(True)
         else:
             return(False)
+            
+    def save(self,fname='JeopardyData.json'):
+        serial = []
+        for game in self.games:
+            serial.append(game.__dict__())
+        json_output = json.dumps(serial)
+        with open(fname,'w') as f:
+            f.write(json_output)
+    
+    def load(self,fname='JeopardyData.json'):
+        with open(fname,'r') as f:
+            json_input = json.load(f)
+        self.games = []
+        for game in json_input:
+            self.games.append(Game.Game(load=True,**game))
             
     def __len__(self):
         l = len(self.games)

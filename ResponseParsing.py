@@ -1,4 +1,4 @@
-__version__ = '0.5.0-dev'
+__version__ = '0.5.0'
 __author__ = 'Christian Brickhouse'
 
 from nltk.corpus import wordnet
