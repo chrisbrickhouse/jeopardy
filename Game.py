@@ -113,19 +113,24 @@ class Game:
         """Create a Clue object for each clue in self.raw_clues"""
         if len(self.raw_clues) == 0:
             raise ValueError('Game has no clues yet _parse_clues was called?')
-        clues = []
+        self.clues = {
+            'jeopardy_round':[],
+            'double_jeopardy_round':[],
+            'final_jeopardy_round':[]
+        }
         for clue in self.raw_clues:
             if len(clue.contents) == 1:
                 continue  # Skip clues that went unrevealed.
-            clues.append(Clue(clue,self))
-        j = [x for x in clues if x.round_ == 'jeopardy_round']
-        dj = [x for x in clues if x.round_ == 'double_jeopardy_round']
-        fj = [x for x in clues if x.round_ == 'final_jeopardy_round']
-        self.clues = {
-            'jeopardy_round':j,
-            'double_jeopardy_round':dj,
-            'final_jeopardy_round':fj
-        }
+            for parent in clue.parents:
+                if 'id' in parent.attrs:
+                    round_ = parent['id']
+                    break
+            if round_ == 'final_jeopardy_round':
+                self.clues[round_].append(FinalJeopardyClue(clue,self))
+            elif round_ in ['jeopardy_round','double_jeopardy_round']:
+                self.clues[round_].append(Clue(clue,self,round_))
+            else:
+                raise ValueError(f"Unknown round: {round_}")
             
     def _set_categories(self):
         """Create data structure of categories used in the game. 
@@ -206,7 +211,14 @@ class Clue:
     wasCorrect_regex = re.compile(r'<td class="(right|wrong)">(.*?)<\/td>')
     target_regex = re.compile(r"correct_response.+?>(.*)</em>")
     
-    def __init__(self,bs4_tag=None,game=None,load=False,**kwargs):
+    def __init__(
+                self,
+                bs4_tag=None,
+                game=None,
+                round_=None,
+                load=False,
+                **kwargs
+                ):
         if game and load:
             self.loaded = True
             self.load(game,**kwargs)
@@ -214,21 +226,21 @@ class Clue:
         self.loaded = False
         self.tag_obj = bs4_tag
         self.game = game
-        self._set_round()
-        try:
-            self.order_num = int(
-                self.tag_obj.find(
-                    'td',
-                    attrs={'class':'clue_order_number'}
-                ).text
-            )
-        except AttributeError:
-            if self.round_ != 'final_jeopardy_round':
-                print('Unknown clue order in game %s, %s'%(self.game.title,self.round_))
-            self.order_num = None
-        self._set_value()
+        self.round_ = round_
         self._set_text()
         self._set_responses()
+        if round_ != 'final_jeopardy_round':
+            self._set_value()
+            try:
+                self.order_num = int(
+                    self.tag_obj.find(
+                        'td',
+                        attrs={'class':'clue_order_number'}
+                    ).text
+                )
+            except AttributeError:
+                print('Unknown clue order in game {self.game.title}, {round_}')
+                self.order_num = None
         
     def load(self,game,**kwargs):
         self.game = game
@@ -245,18 +257,6 @@ class Clue:
             self.value = kwargs['value']
             self.correct = kwargs['correct']
             self.responses = kwargs['responses']
-        
-    def _set_round(self):
-        """Set the round the clue comes from.
-        
-        Sets self.round_ based upon the first tag up the tree which has an 'id'
-        attribute. This may not always work but is cross checked again later in
-        the method self._set_category below.
-        """
-        for parent in self.tag_obj.parents:
-            if 'id' in parent.attrs:
-                self.round_ = parent['id']
-                break
                 
     def _set_value(self):
         """Set the dollar amount the clue was worth.
@@ -353,6 +353,8 @@ class Clue:
             ))
             self.correct = None
             return()
+        if self.round_ == 'final_jeopardy_round':
+            return()
         self.correct = None
         for response in responses:
             player = response[1]
@@ -366,9 +368,6 @@ class Clue:
 
     def _clean_annotations(self):
         annotation = self.annotation
-        if self.round_ == 'final_jeopardy_round':
-            pass  # Needs to be handled separately.
-            return()  # The rest is only for non-final clues.
         quotation = re.findall(r'\((.*?)\)',annotation)
         self.responses=[]
         for match in quotation:
@@ -404,3 +403,54 @@ class Clue:
             'responses':self.responses,
         }
         return(dictionary)
+        
+class FinalJeopardyClue(Clue):
+    
+    fj_regex = re.compile(r'<td(?: class=\"(.*?)\"|.*?)>(.*?)</td>')
+    
+    def __init__(self,bs4_tag=None,game=None,load=False,**kwargs):
+        super().__init__(bs4_tag,game,'final_jeopardy_round')
+        matches = re.findall(self.fj_regex,self.annotation)
+        count = 0
+        fj_data = []
+        response = []
+        print(self.annotation)
+        for match in matches:
+            response.append(match)
+            count+=1
+            if count == 3:
+                count = 0
+                fj_data.append(response)
+                response=[]
+        self.contestants = [x[0][1] for x in fj_data]
+        self.responses = [x[1][1] for x in fj_data]
+        self.wagers = [x[2][1] for x in fj_data]
+        correct = [x[0][0] for x in fj_data]
+        self._correct_=[]
+        for value in correct:
+            if value == 'wrong':
+                self._correct_.append(False)
+            elif value == 'right':
+                self._correct_.append(True)
+            else:
+                raise ValueError('Response neither right nor wrong?')
+                
+    def correct(self,contestant=None):
+        c_type = type(contestant)
+        if contestant == None:
+            if True in self._correct_:
+                return(True)
+            else:
+                return(False)
+        elif c_type is int:
+            return(self._correct_[contestant])
+        elif c_type is str:
+            i = self.contestants.index(contestant)
+            return(self._correct_[i])
+        elif c_type in [list,tuple]:
+            out = []
+            for item in contestant:
+                out.append(self.correct(item))
+            return(out)
+        else:
+            raise TypeError(f'Type {c_type} not supported')

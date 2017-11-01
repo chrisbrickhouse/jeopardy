@@ -65,13 +65,6 @@ class Scraper():
                             if not ResponseParsing.check_syntax(tree):
                                 print(sentence)
                                 notQuestions+=1
-
-    def _checkEnd(self, source, id_):
-        error_string = 'ERROR: No game %s in database.'%str(id_)
-        if error_string in source:
-            return(True)
-        else:
-            return(False)
             
     def save(self,fname='JeopardyData.json'):
         serial = []
@@ -87,6 +80,13 @@ class Scraper():
         self.games = []
         for game in json_input:
             self.games.append(Game.Game(load=True,**game))
+
+    def _checkEnd(self, source, id_):
+        error_string = 'ERROR: No game %s in database.'%str(id_)
+        if error_string in source:
+            return(True)
+        else:
+            return(False)
             
     def __len__(self):
         l = len(self.games)
