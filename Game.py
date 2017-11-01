@@ -45,7 +45,7 @@ class Game:
         """Initialize important meta-data on the game."""
         if load:
             self.loaded = True
-            self.load(**kwargs)
+            self._load(**kwargs)
             return(None)
         else:
             self.loaded = False
@@ -77,7 +77,7 @@ class Game:
                 'final_jeopardy_round':[]
             }
     
-    def load(self,**kwargs):
+    def _load(self,**kwargs):
         self.id_ = kwargs['id_']
         self.title = kwargs['title']
         self.game_number = kwargs['game_number']
@@ -221,7 +221,7 @@ class Clue:
                 ):
         if game and load:
             self.loaded = True
-            self.load(game,**kwargs)
+            self._load(game,**kwargs)
             return(None)
         self.loaded = False
         self.tag_obj = bs4_tag
@@ -267,7 +267,7 @@ class Clue:
         else:
             raise ValueError(f"Unknown method argument {method}")
         
-    def load(self,game,**kwargs):
+    def _load(self,game,**kwargs):
         self.game = game
         self.round_ = kwargs['round_']
         self.text = kwargs['text']
@@ -434,6 +434,11 @@ class FinalJeopardyClue(Clue):
     fj_regex = re.compile(r'<td(?: class=\"(.*?)\"|.*?)>(.*?)</td>')
     
     def __init__(self,bs4_tag=None,game=None,load=False,**kwargs):
+        if game and load:
+            self.loaded = True
+            self._load(game,kwargs)
+            return(None)
+        self.loaded = False
         super().__init__(bs4_tag,game,'final_jeopardy_round')
         matches = re.findall(self.fj_regex,self.annotation)
         count = 0
@@ -480,8 +485,8 @@ class FinalJeopardyClue(Clue):
         else:
             raise TypeError(f'Type {c_type.__name__} not supported')
             
-    def load(self,**kwargs):
-        super().load(kwargs)
+    def _load(self,game,**kwargs):
+        super()._load(game,kwargs)
         self.wagers = kwargs['wagers']
         self.responses = kwargs['responses']
         self.contestants = kwargs['contestants']
