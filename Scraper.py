@@ -49,23 +49,6 @@ class Scraper():
             game = Game.Game(html,url)
             self.games.append(game)
             
-    def parse_all(self):
-        total = 0
-        notQuestions = 0
-        for game in self.games:
-            for round_ in game.clues:
-                if round_ == 'final_jeopardy_round':
-                    continue
-                for clue in game.clues[round_]:
-                    if clue.annotation:
-                        for response in clue.responses:
-                            sentence = response[1]
-                            tree = jparse.parse(sentence)[0]
-                            total += 1
-                            if not ResponseParsing.check_syntax(tree):
-                                print(sentence)
-                                notQuestions+=1
-            
     def save(self,fname='JeopardyData.json'):
         serial = []
         for game in self.games:

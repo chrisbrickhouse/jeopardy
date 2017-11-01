@@ -453,4 +453,19 @@ class FinalJeopardyClue(Clue):
                 out.append(self.correct(item))
             return(out)
         else:
-            raise TypeError(f'Type {c_type} not supported')
+            raise TypeError(f'Type {c_type.__name__} not supported')
+            
+    def load(self,**kwargs):
+        super().load(kwargs)
+        self.wagers = kwargs['wagers']
+        self.responses = kwargs['responses']
+        self.contestants = kwargs['contestants']
+        self._correct_ = kwargs['correct']
+        
+    def __dict__(self):
+        d = super().__dict__()
+        d['correct'] = self._correct_
+        d['wagers'] = self.wagers
+        d['responses'] = self.responses
+        d['contestants'] = self.contestants
+        return(d)
