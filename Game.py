@@ -199,7 +199,7 @@ class Clue:
         annotation    Any associated commentary with the clue other than the
                         correct response.
         target        The correct response.
-        correct       Whether any participant answered the clue correctly.
+        *correct     (Made method in 0.6.0) 
         
     Methods:
         __init__      Initializes the Clue object and calls the various 
@@ -241,6 +241,31 @@ class Clue:
             except AttributeError:
                 print('Unknown clue order in game {self.game.title}, {round_}')
                 self.order_num = None
+                
+    def correct(self,method='any'):
+        if method == 'any' or method == 'a':
+            if True in self._correct_:
+                return(True)
+            else:
+                return(False)
+        elif method == 'any-false' or method == 'af':
+            if False in self._correct_:
+                return(True)
+            else:
+                return(False)
+        elif method == 'no-correct' or method == 'nc':
+            if True not in self._correct_:
+                return(True)
+            else:
+                return(False)
+        elif method == 'first-response' or method == 'fr':
+            return(self._correct_[0])
+        elif method == 'all':
+            return(self._correct_)
+        elif method == 'length' or method == 'l':
+            return(len(self._correct_))
+        else:
+            raise ValueError(f"Unknown method argument {method}")
         
     def load(self,game,**kwargs):
         self.game = game
@@ -255,7 +280,7 @@ class Clue:
             self.order_num = kwargs['order_num']
             self.daily_double = kwargs['daily_double']
             self.value = kwargs['value']
-            self.correct = kwargs['correct']
+            self._correct_ = kwargs['correct']
             self.responses = kwargs['responses']
         
     def _set_text(self):
@@ -313,6 +338,9 @@ class Clue:
         except AttributeError:
             raise ValueError('Clue has no correct response?')
         self.annotation = re.search(self.response_regex,annotation).group(1)
+        if self.round_ == 'final_jeopardy_round':
+            return()
+        self._correct_ = []
         responses = re.findall(self.wasCorrect_regex,annotation)
         if responses == []:
             print('Unknown whether response was correct or not.\n' +
@@ -324,19 +352,13 @@ class Clue:
                 self.row,
                 self.col
             ))
-            self.correct = None
             return()
-        if self.round_ == 'final_jeopardy_round':
-            return()
-        self.correct = None
         for response in responses:
             player = response[1]
             if response[0] == 'right':
-                self.correct = True
-            elif response[0] == 'wrong' and self.correct != True:
-                self.correct = False
-            else:
-                self.correct = None
+                self._correct_.append(True)
+            elif response[0] == 'wrong':
+                self._correct_.append(True)
         self._clean_annotations()
 
     def _clean_annotations(self):
@@ -399,7 +421,7 @@ class Clue:
             'category':self.category,
             'target':self.target,
             'annotation':self.annotation,
-            'correct':self.correct,
+            'correct':self._correct_,
             'responses':self.responses,
         }
         return(dictionary)
