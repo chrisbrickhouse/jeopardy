@@ -397,6 +397,9 @@ class Clue:
         else:
             self.daily_double = False
             self.value = int(val.text.strip().strip('$'))
+            
+    def __str__(self):
+        return(self.text)
     
     def __dict__(self):
         if self.round_ == 'final_jeopardy_round':
