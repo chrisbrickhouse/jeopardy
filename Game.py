@@ -108,6 +108,28 @@ class Game:
             self.raw_clues = []
             return(False)
         return(True)
+            
+    def _set_categories(self):
+        """Create data structure of categories used in the game. 
+        
+        A list of categories used in each round is stored in a dictionary whose
+        keys are the various round names. This structure is stored as 
+        self.categories.
+        """
+        catsByRound = {
+            'jeopardy_round':[],
+            'double_jeopardy_round':[],
+            'final_jeopardy_round':[]
+        }
+        for round_ in self.rounds:
+            round_tag = self._parsed_html.body.find('div',attrs={'id':round_})
+            gen = round_tag.find_all(
+                'td',
+                attrs={'class':'category_name'}
+                ) # needs better name than 'gen'
+            for category in gen:
+                catsByRound[round_].append(category.text.lower())
+        self.categories = catsByRound
         
     def _parse_clues(self):
         """Create a Clue object for each clue in self.raw_clues"""
@@ -131,28 +153,6 @@ class Game:
                 self.clues[round_].append(Clue(clue,self,round_))
             else:
                 raise ValueError(f"Unknown round: {round_}")
-            
-    def _set_categories(self):
-        """Create data structure of categories used in the game. 
-        
-        A list of categories used in each round is stored in a dictionary whose
-        keys are the various round names. This structure is stored as 
-        self.categories.
-        """
-        catsByRound = {
-            'jeopardy_round':[],
-            'double_jeopardy_round':[],
-            'final_jeopardy_round':[]
-        }
-        for round_ in self.rounds:
-            round_tag = self._parsed_html.body.find('div',attrs={'id':round_})
-            gen = round_tag.find_all(
-                'td',
-                attrs={'class':'category_name'}
-                ) # needs better name than 'gen'
-            for category in gen:
-                catsByRound[round_].append(category.text.lower())
-        self.categories = catsByRound
         
     def __dict__(self):
         clues = []
@@ -257,33 +257,6 @@ class Clue:
             self.value = kwargs['value']
             self.correct = kwargs['correct']
             self.responses = kwargs['responses']
-                
-    def _set_value(self):
-        """Set the dollar amount the clue was worth.
-        
-        Value is stored as an int in self.value and represents the dollar amount
-        won or lost by a correct or incorrect response. It determines whether
-        the clue is a daily double and sets self.daily_double as a boolean.
-        """
-        if self.round_ == 'final_jeopardy_round':
-            return()
-        val = self.tag_obj.find(
-            'td',
-            attrs={'class':'clue_value'}
-        )
-        if val == None:
-            val = self.tag_obj.find(
-                'td',
-                attrs={'class':'clue_value_daily_double'}
-            )
-            if val == None:
-                raise ValueError('Clue has no value?')
-            else:
-                self.daily_double = True
-                self.value = val.text[5:]  # remove the 'DD: $' that precedes DD clue values.
-        else:
-            self.daily_double = False
-            self.value = int(val.text.strip().strip('$'))
         
     def _set_text(self):
         """Set the text of the clue."""
@@ -375,6 +348,33 @@ class Clue:
             speaker = msplit[0]
             speech = ':'.join(msplit[1:])
             self.responses.append((speaker.strip(),speech.strip()))
+                
+    def _set_value(self):
+        """Set the dollar amount the clue was worth.
+        
+        Value is stored as an int in self.value and represents the dollar amount
+        won or lost by a correct or incorrect response. It determines whether
+        the clue is a daily double and sets self.daily_double as a boolean.
+        """
+        if self.round_ == 'final_jeopardy_round':
+            return()
+        val = self.tag_obj.find(
+            'td',
+            attrs={'class':'clue_value'}
+        )
+        if val == None:
+            val = self.tag_obj.find(
+                'td',
+                attrs={'class':'clue_value_daily_double'}
+            )
+            if val == None:
+                raise ValueError('Clue has no value?')
+            else:
+                self.daily_double = True
+                self.value = val.text[5:]  # remove the 'DD: $' that precedes DD clue values.
+        else:
+            self.daily_double = False
+            self.value = int(val.text.strip().strip('$'))
     
     def __dict__(self):
         if self.round_ == 'final_jeopardy_round':
