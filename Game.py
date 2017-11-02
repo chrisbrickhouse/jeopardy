@@ -94,7 +94,14 @@ class Game:
         }
         for clue in kwargs['clues']:
             round_ = clue['round_']
-            self.clues[round_].append(Clue(game=self,load=True,**clue))
+            if round_ == 'final_jeopardy_round':
+                self.clues[round_].append(FinalJeopardyClue(
+                                                            game=self,
+                                                            load=True,
+                                                            **clue
+                                                            )
+            else:
+                self.clues[round_].append(Clue(game=self,load=True,**clue))
             
         
     def _set_raw_clues(self):
