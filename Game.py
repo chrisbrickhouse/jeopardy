@@ -366,10 +366,6 @@ class Clue:
                 self._correct_.append(True)
             elif response[0] == 'wrong':
                 self._correct_.append(True)
-        self._clean_annotations()
-
-    def _clean_annotations(self):
-        annotation = self.annotation
         quotation = re.findall(r'\((.*?)\)',annotation)
         self.responses=[]
         for match in quotation:
