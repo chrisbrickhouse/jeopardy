@@ -75,4 +75,4 @@ Parsing is not yet fully implemented (as of v0.5.0).
 
 ## License
 
-This project is licensed under the terms of the BSD 3-clause license - see [LICENSE.md](LICENSE.md) for details
+This project is licensed under the terms of the BSD 3-clause license - see [LICENSE](LICENSE) for details
