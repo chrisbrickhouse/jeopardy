@@ -49,7 +49,7 @@ class Scraper():
             self.default_wait = default_wait
         self.jparse = ResponseParsing.JeopardyParser()
         
-    def scrape(self,start,stop=None,step=1,wait=None,random=True):
+    def scrape(self,start,stop=None,step=1,wait=None,random=False):
         """Scrape pages of given game ids and create Game and Clue instances.
         
         This method takes game ids as its input and requests the page(s), 

@@ -105,7 +105,7 @@ class Game:
                                                             game=self,
                                                             load=True,
                                                             **clue
-                                                            )
+                                                            ))
             else:
                 self.clues[round_].append(Clue(game=self,load=True,**clue))
             
