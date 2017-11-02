@@ -468,13 +468,10 @@ class FinalJeopardyClue(Clue):
             else:
                 raise ValueError('Response neither right nor wrong?')
                 
-    def correct(self,contestant=None):
+    def correct(self,method='any',contestant=None):
         c_type = type(contestant)
         if contestant == None:
-            if True in self._correct_:
-                return(True)
-            else:
-                return(False)
+            return(super().correct(method))
         elif c_type is int:
             return(self._correct_[contestant])
         elif c_type is str:
