@@ -78,6 +78,12 @@ class Game:
             }
     
     def _load(self,**kwargs):
+        """Set attributes based on given data.
+        
+        Called by Scraper.load() via Game.__init__(), it takes in JSON formatted
+          data and sets the public attributes. Private attributes (page source 
+          and bs4 trees notably) are not loaded as they are not saved.
+        """
         self.id_ = kwargs['id_']
         self.title = kwargs['title']
         self.game_number = kwargs['game_number']
@@ -162,6 +168,7 @@ class Game:
                 raise ValueError(f"Unknown round: {round_}")
         
     def __dict__(self):
+        """Return a dictionary of public attributes"""
         clues = []
         for round_ in self.clues.keys():
             for clue in self.clues[round_]:
@@ -206,6 +213,8 @@ class Clue:
         annotation    Any associated commentary with the clue other than the
                         correct response.
         target        The correct response.
+        loaded        Boolean that is True if instance was loaded from JSON and
+                        False otherwise.
         *correct     (Made method in 0.6.0) 
         
     Methods:
@@ -250,6 +259,33 @@ class Clue:
                 self.order_num = None
                 
     def correct(self,method='any'):
+        """Return, among other options, whether the clue was answered correctly.
+        
+        By default, returns True if any response to the clue was correct.
+          Specifying a different method argument changes that functionality and
+          can provide whether there were any wrong responses, the truth value of
+          all given responses, and the number of responses among others, see
+          list of options.
+          
+        Arguments:
+            method      How the function should determine what value to return,
+                          take one of the following:
+                        
+                        a   any             Return True if any response was 
+                                              correct.
+                        af  any-false       Return True if any response was not
+                                              correct. Opposite of 'any'.
+                        nc  no-correct      Return True iff no responses were 
+                                              correct.
+                        fr  first-response  Return True if the first response 
+                                              was correct, False if incorrect
+                                              or not answered.
+                            all             Return a list of truth values for
+                                              all responses to the clue where
+                                              True is a correct response and 
+                                              False is not a correct response.
+                        l   length          Return the number of responses.
+        """
         if method == 'any' or method == 'a':
             if True in self._correct_:
                 return(True)
@@ -275,6 +311,7 @@ class Clue:
             raise ValueError(f"Unknown method argument {method}")
         
     def _load(self,game,**kwargs):
+        """Set public attributes from JSON input"""
         self.game = game
         self.round_ = kwargs['round_']
         self.text = kwargs['text']
@@ -402,9 +439,11 @@ class Clue:
             self.value = int(val.text.strip().strip('$'))
             
     def __str__(self):
+        """Return the clue text."""
         return(self.text)
     
     def __dict__(self):
+        """Return a dictionary of public attributes."""
         if self.round_ == 'final_jeopardy_round':
             dictionary = {
                 'round_':self.round_,
@@ -433,6 +472,24 @@ class Clue:
         return(dictionary)
         
 class FinalJeopardyClue(Clue):
+    """An extension of the Clue class to handle Final Jeopardy data.
+    
+    Attributes:
+      Defined here:
+        wagers      A list of the amount each contestant wagered.
+        contestants A list of the first names of each contestant who 
+                      participated in Final Jeopardy.
+        responses   A list of the responses each contestant gave.
+        
+      Inhereted from Clue (see documentation there):
+        category
+        text
+        annotation
+        target
+        round_
+        row
+        column
+    """
     
     fj_regex = re.compile(r'<td(?: class=\"(.*?)\"|.*?)>(.*?)</td>')
     
@@ -469,6 +526,19 @@ class FinalJeopardyClue(Clue):
                 raise ValueError('Response neither right nor wrong?')
                 
     def correct(self,method='any',contestant=None):
+        """Extends Clue.correct() to retrieve particular contestant responses.
+        
+        By default, the function returns whether any contestant responded 
+            correctly. If no contestant is specified, the method parameter is
+            passed to Clue.correct() and that value returned, if a contestant
+            is specified, method is meaningless and disregarded.
+        If contestant is an integer, it is treated as an index and the boolean
+            at that location in FJC._correct_ is returned. If it is a string 
+            it is treated as a contestant's name and the boolean for that 
+            contestant's response is returned. If it is a list or tuple, each 
+            element is passed individually to FJC.clue to be evaluated 
+            recursively and a list of the returns is returned.
+        """
         c_type = type(contestant)
         if contestant == None:
             return(super().correct(method))
@@ -486,6 +556,7 @@ class FinalJeopardyClue(Clue):
             raise TypeError(f'Type {c_type.__name__} not supported')
             
     def _load(self,game,**kwargs):
+        """Set public attributes from JSON input."""
         super()._load(game,kwargs)
         self.wagers = kwargs['wagers']
         self.responses = kwargs['responses']
@@ -493,6 +564,7 @@ class FinalJeopardyClue(Clue):
         self._correct_ = kwargs['correct']
         
     def __dict__(self):
+        """Return dictionary of public attributes."""
         d = super().__dict__()
         d['correct'] = self._correct_
         d['wagers'] = self.wagers
