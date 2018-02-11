@@ -36,12 +36,21 @@ class Game:
 
     Methods:
         __init__    Initializes the game object.
+        score_graph If given a matplotlib instance, will plot each player's
+                      score by clue, otherwise returns a the data as dictionary
+                      where keys are contestant names and values are lists of
+                      the data used to plot.
     """
 
     title_regex = re.compile(r'#(\d+).*?([a-zA-Z]+), ([a-zA-Z]+) (\d+), (\d+)')
     rounds = ['jeopardy_round','double_jeopardy_round','final_jeopardy_round']
 
-    def __init__(self,page_source=None,url=None,load=False,**kwargs):
+    def __init__(self,
+            page_source = None,
+            url = None,
+            load = False,
+            **kwargs
+        ):
         """Initialize important meta-data on the game."""
         if load:
             self.loaded = True
@@ -63,6 +72,8 @@ class Game:
         self.day = day
         self.date = ' '.join([day,mon,year])
         self.year = year
+        self._set_contestants()
+        self.score_data = None
         notEmpty = self._set_raw_clues()
         if notEmpty:
             self._set_categories()
@@ -76,6 +87,52 @@ class Game:
                 'double_jeopardy_round':[],
                 'final_jeopardy_round':[]
             }
+
+    def score_graph(self, plt=None):
+        if self.score_data == None:
+            self.score_data = self._make_score_data()
+        if plt == None:
+            return(self.score_data)
+        else:
+            for cont in self.contestants:
+                plt.plot(cont.score_series)
+            plt.show()
+            return()
+
+    def _make_score_data(self):
+        max_i = 0
+        for clue in self.clues['jeopardy_round']:
+            if clue.order_num == None:
+                continue
+            i = clue.order_num
+            resp = clue.correct('all')
+            for contestant in self.contestants:
+                contestant._update_series(clue, resp, i)
+            if i > max_i:
+                max_i = i
+        offset = max_i
+        for clue in self.clues['double_jeopardy_round']:
+            if clue.order_num == None:
+                continue
+            i = clue.order_num + offset
+            resp = clue.correct('all')
+            for contestant in self.contestants:
+                contestant._update_series(clue, resp, i)
+            if i > max_i:
+                max_i = i
+        for clue in self.clues['final_jeopardy_round']:
+            i = max_i + 1
+            resp = clue.correct('all')
+            for contestant in self.contestants:
+                contestant._update_series(clue, resp, i, fj=True)
+                contestant.score_series = contestant.score_series[:max_i+2]
+        for cont in self.contestants:
+            cont._make_series()
+        ret_dict = {}
+        for cont in self.contestants:
+            series = cont.score_series
+            ret_dict[cont.name] = series
+        return(ret_dict)
 
     def _load(self,**kwargs):
         """Set attributes based on given data.
@@ -108,7 +165,6 @@ class Game:
                                                             ))
             else:
                 self.clues[round_].append(Clue(game=self,load=True,**clue))
-
 
     def _set_raw_clues(self):
         """Add all bs4 Tag objects for clues to a list, self.raw_clues"""
@@ -167,6 +223,19 @@ class Game:
             else:
                 raise ValueError(f"Unknown round: {round_}")
 
+    def _set_contestants(self):
+        """Return a list of Contestant objects."""
+        self.contestants = []
+        raw_contestants = self._parsed_html.body.find_all(
+            'p',
+            attrs={'class':'contestants'}
+        )
+        for cont in raw_contestants:
+            flavor = cont.text
+            name = cont.a.text
+            link = cont.a['href']
+            self.contestants.append(Contestant(name,link,flavor))
+
     def __dict__(self):
         """Return a dictionary of public attributes"""
         clues = []
@@ -215,6 +284,9 @@ class Clue:
         target        The correct response.
         loaded        Boolean that is True if instance was loaded from JSON and
                         False otherwise.
+        order_num     An integer representing the clue number, that is, 1 is the
+                        first revealed clue, 10 is the tenth revealed clue, etc.
+                        Numbers are only for the current round.
         *correct     (Made method in 0.6.0)
 
     Methods:
@@ -255,7 +327,7 @@ class Clue:
                     ).text
                 )
             except AttributeError:
-                print('Unknown clue order in game {self.game.title}, {round_}')
+                print(f'Unknown clue order in game {self.game.title}, {round_}')
                 self.order_num = None
 
     def correct(self,method='any'):
@@ -280,29 +352,32 @@ class Clue:
                         fr  first-response  Return True if the first response
                                               was correct, False if incorrect
                                               or not answered.
-                            all             Return a list of truth values for
-                                              all responses to the clue where
+                            all             Return a list of tuples with
+                                              contestant names as the first
+                                              tuple value and the truth values
+                                              for the response as the second.
                                               True is a correct response and
                                               False is not a correct response.
                         l   length          Return the number of responses.
         """
+        truth_list = [x[1] for x in self._correct_]
         if method == 'any' or method == 'a':
-            if True in self._correct_:
+            if True in truth_list:
                 return(True)
             else:
                 return(False)
         elif method == 'any-false' or method == 'af':
-            if False in self._correct_:
+            if False in truth_list:
                 return(True)
             else:
                 return(False)
         elif method == 'no-correct' or method == 'nc':
-            if True not in self._correct_:
+            if True not in truth_list:
                 return(True)
             else:
                 return(False)
         elif method == 'first-response' or method == 'fr':
-            return(self._correct_[0])
+            return(self._correct_[0][1])
         elif method == 'all':
             return(self._correct_)
         elif method == 'length' or method == 'l':
@@ -400,9 +475,9 @@ class Clue:
         for response in responses:
             player = response[1]
             if response[0] == 'right':
-                self._correct_.append(True)
+                self._correct_.append((player,True))
             elif response[0] == 'wrong':
-                self._correct_.append(True)
+                self._correct_.append((player,False))
         quotation = re.findall(r'\((.*?)\)',annotation)
         self.responses=[]
         for match in quotation:
@@ -433,7 +508,8 @@ class Clue:
                 raise ValueError('Clue has no value?')
             else:
                 self.daily_double = True
-                self.value = val.text[5:]  # remove the 'DD: $' that precedes DD clue values.
+                # remove the 'DD: $' that precedes DD values and any commas.
+                self.value = int(val.text[5:].replace(',',''))
         else:
             self.daily_double = False
             self.value = int(val.text.strip().strip('$'))
@@ -516,19 +592,25 @@ class FinalJeopardyClue(Clue):
         self.responses = [x[1][1] for x in fj_data]
         self.wagers = [x[2][1] for x in fj_data]
         correct = [x[0][0] for x in fj_data]
-        correct = []
+        print(self.contestants)
+        print(self.responses)
+        print(self.wagers)
+        print(correct)
+        correctval = []
         for value in correct:
             if value == 'wrong':
-                correct.append(False)
+                correctval.append(False)
             elif value == 'right':
-                correct.append(True)
+                correctval.append(True)
             else:
                 raise ValueError('Response neither right nor wrong?')
+        print(correctval)
+        print(repr(fj_data))
         self._correct_ = []
         for i in range(len(self.contestants)):
             cont = self.contestants[i]
-            tv = correct[i]
             val = self.wagers[i]
+            tv = correctval[i]
             self._correct_.append(
                 (
                     cont,
@@ -536,6 +618,7 @@ class FinalJeopardyClue(Clue):
                     val
                 )
             )
+        print(self._correct_)
 
     def correct(self,method='any',contestant=None):
         """Extends Clue.correct() to retrieve particular contestant responses.
@@ -553,6 +636,8 @@ class FinalJeopardyClue(Clue):
         """
         c_type = type(contestant)
         if contestant == None:
+            if method == 'all':
+                return(self._correct_)
             return(super().correct(method))
         elif c_type is int:
             return(self._correct_[contestant])
@@ -583,3 +668,38 @@ class FinalJeopardyClue(Clue):
         d['responses'] = self.responses
         d['contestants'] = self.contestants
         return(d)
+
+class Contestant():
+    def __init__(self, name, link, flavor=''):
+        self.name = name
+        self.first_name = name.split(" ")[0]
+        self.link = link
+        self.flavor = flavor
+        self.score_series = [0]*70
+
+    def _update_series(self, clue, resp, i, fj = False):
+        guessers = [x[0] for x in resp]
+        if fj == True:
+            print(resp)
+            print(guessers)
+        if self.first_name in guessers:
+            tv = [x[1] for x in resp if x[0] == self.first_name][0]
+            if fj == True:
+                val = [x[2] for x in resp if x[0] == self.first_name][0]
+                val = int(val.strip()[1:].replace(',',''))
+            else:
+                val = clue.value
+            if tv == False:
+                val = -1 * val
+            try:
+                self.score_series[i] = val
+            except:
+                print(i)
+                exit()
+
+    def _make_series(self):
+        for i in range(len(self.score_series)):
+            if i == 0:
+                continue
+            self.score_series[i] = self.score_series[i-1] + \
+                self.score_series[i]
