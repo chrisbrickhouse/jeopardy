@@ -8,17 +8,17 @@ from bs4 import BeautifulSoup as soup
 
 class Game:
     """An object that represents a Jeopardy game and structures related data.
-    
-    The Game class creates an object that structures and contains data on a 
-    given Jeopardy game from the j-archive. It contains data related to the 
+
+    The Game class creates an object that structures and contains data on a
+    given Jeopardy game from the j-archive. It contains data related to the
     game as a whole and contains all of the clues (represented as Clue objects)
     within it.
-    
+
     Attributes:
         id_         The game id used in the j-archive url.
         title       The title of the game, including the game number and date.
         game_number The number of the game in sequence from the first, different
-                      from the id_. Game ID is j-archive specific, but 
+                      from the id_. Game ID is j-archive specific, but
                       game_number is numbered from the start of Jeopardy.
         date        The date the game aired in the format '(D)D Mon YYYY'.
         day         The day of the month on which the game aired.
@@ -29,18 +29,18 @@ class Game:
                       category names.
         clues       A dictionary, with round names as keys, containing lists of
                       all the Clue objects for that round.
-                      
+
         TO ADD:
-            *       Various objects related to score statistics and team 
+            *       Various objects related to score statistics and team
                       batting avgerage.
-    
+
     Methods:
         __init__    Initializes the game object.
     """
-    
+
     title_regex = re.compile(r'#(\d+).*?([a-zA-Z]+), ([a-zA-Z]+) (\d+), (\d+)')
     rounds = ['jeopardy_round','double_jeopardy_round','final_jeopardy_round']
-    
+
     def __init__(self,page_source=None,url=None,load=False,**kwargs):
         """Initialize important meta-data on the game."""
         if load:
@@ -76,12 +76,12 @@ class Game:
                 'double_jeopardy_round':[],
                 'final_jeopardy_round':[]
             }
-    
+
     def _load(self,**kwargs):
         """Set attributes based on given data.
-        
+
         Called by Scraper.load() via Game.__init__(), it takes in JSON formatted
-          data and sets the public attributes. Private attributes (page source 
+          data and sets the public attributes. Private attributes (page source
           and bs4 trees notably) are not loaded as they are not saved.
         """
         self.id_ = kwargs['id_']
@@ -108,8 +108,8 @@ class Game:
                                                             ))
             else:
                 self.clues[round_].append(Clue(game=self,load=True,**clue))
-            
-        
+
+
     def _set_raw_clues(self):
         """Add all bs4 Tag objects for clues to a list, self.raw_clues"""
         self.raw_clues = self._parsed_html.body.find_all(
@@ -121,12 +121,12 @@ class Game:
             self.raw_clues = []
             return(False)
         return(True)
-            
+
     def _set_categories(self):
-        """Create data structure of categories used in the game. 
-        
+        """Create data structure of categories used in the game.
+
         A list of categories used in each round is stored in a dictionary whose
-        keys are the various round names. This structure is stored as 
+        keys are the various round names. This structure is stored as
         self.categories.
         """
         catsByRound = {
@@ -143,7 +143,7 @@ class Game:
             for category in gen:
                 catsByRound[round_].append(category.text.lower())
         self.categories = catsByRound
-        
+
     def _parse_clues(self):
         """Create a Clue object for each clue in self.raw_clues"""
         if len(self.raw_clues) == 0:
@@ -166,7 +166,7 @@ class Game:
                 self.clues[round_].append(Clue(clue,self,round_))
             else:
                 raise ValueError(f"Unknown round: {round_}")
-        
+
     def __dict__(self):
         """Return a dictionary of public attributes"""
         clues = []
@@ -187,15 +187,15 @@ class Game:
         }
         return(dictionary)
 
-        
+
 class Clue:
     """An object representing and containing data on a particular Jeopardy clue.
-    
-    This class and its associated methods compile and structure data on a 
-    Jeopardy clue ib relation to the game object it is associated with. It is 
-    called by Game._parse_clues but can be constructed individually if given a 
+
+    This class and its associated methods compile and structure data on a
+    Jeopardy clue ib relation to the game object it is associated with. It is
+    called by Game._parse_clues but can be constructed individually if given a
     proper bs4 tag object and a game object.
-    
+
     Attributes:
         tag_obj       The bs4 tag object from parsing the j-archive data which
                         contains the associated data for the clue.
@@ -204,7 +204,7 @@ class Clue:
         category      The name of the category for the clue.
         value         How much is won (or lost) given an (in)correct response.
                         This is usually the facial value of the clue but for
-                        Daily Doubles (ie, daily_double == True), it is the 
+                        Daily Doubles (ie, daily_double == True), it is the
                         amount the contestant wagered.
         row           The row the clue is found on, indexed from 1, not 0.
         column        The column the clue is found on, indexed from 1.
@@ -215,18 +215,18 @@ class Clue:
         target        The correct response.
         loaded        Boolean that is True if instance was loaded from JSON and
                         False otherwise.
-        *correct     (Made method in 0.6.0) 
-        
+        *correct     (Made method in 0.6.0)
+
     Methods:
-        __init__      Initializes the Clue object and calls the various 
+        __init__      Initializes the Clue object and calls the various
                         functions to set the attributes.
-        
+
     """
-    
+
     response_regex = re.compile(r"stuck', '(.*)<em")
     wasCorrect_regex = re.compile(r'<td class="(right|wrong)">(.*?)<\/td>')
     target_regex = re.compile(r"correct_response.+?>(.*)</em>")
-    
+
     def __init__(
                 self,
                 bs4_tag=None,
@@ -257,32 +257,32 @@ class Clue:
             except AttributeError:
                 print('Unknown clue order in game {self.game.title}, {round_}')
                 self.order_num = None
-                
+
     def correct(self,method='any'):
         """Return, among other options, whether the clue was answered correctly.
-        
+
         By default, returns True if any response to the clue was correct.
           Specifying a different method argument changes that functionality and
           can provide whether there were any wrong responses, the truth value of
           all given responses, and the number of responses among others, see
           list of options.
-          
+
         Arguments:
             method      How the function should determine what value to return,
                           take one of the following:
-                        
-                        a   any             Return True if any response was 
+
+                        a   any             Return True if any response was
                                               correct.
                         af  any-false       Return True if any response was not
                                               correct. Opposite of 'any'.
-                        nc  no-correct      Return True iff no responses were 
+                        nc  no-correct      Return True iff no responses were
                                               correct.
-                        fr  first-response  Return True if the first response 
+                        fr  first-response  Return True if the first response
                                               was correct, False if incorrect
                                               or not answered.
                             all             Return a list of truth values for
                                               all responses to the clue where
-                                              True is a correct response and 
+                                              True is a correct response and
                                               False is not a correct response.
                         l   length          Return the number of responses.
         """
@@ -309,7 +309,7 @@ class Clue:
             return(len(self._correct_))
         else:
             raise ValueError(f"Unknown method argument {method}")
-        
+
     def _load(self,game,**kwargs):
         """Set public attributes from JSON input"""
         self.game = game
@@ -326,13 +326,13 @@ class Clue:
             self.value = kwargs['value']
             self._correct_ = kwargs['correct']
             self.responses = kwargs['responses']
-        
+
     def _set_text(self):
         """Set the text of the clue."""
         clue_tag = self.tag_obj.find('td',attrs={'class':'clue_text'})
         self.text = clue_tag.text
         self._set_category(clue_tag['id'])
-        
+
     def _set_category(self,id_str):
         """Set the category of the clue and its coordinates on the board."""
         if id_str == 'clue_FJ':
@@ -340,7 +340,7 @@ class Clue:
         else:
             rnd,col,row = id_str.split('_')[1:]
         if (
-                (rnd == 'J' and self.round_ != 'jeopardy_round') or 
+                (rnd == 'J' and self.round_ != 'jeopardy_round') or
                 (rnd == 'DJ' and self.round_ != 'double_jeopardy_round') or
                 (rnd == 'FJ' and self.round_ != 'final_jeopardy_round')
         ):
@@ -361,7 +361,7 @@ class Clue:
         self.row = int(row)
         self.column = int(col)
         self.category = cats[self.column-1]
-    
+
     def _set_responses(self):
         """Parse the response text and set various response variables."""
         annotation = None
@@ -410,10 +410,10 @@ class Clue:
             speaker = msplit[0]
             speech = ':'.join(msplit[1:])
             self.responses.append((speaker.strip(),speech.strip()))
-                
+
     def _set_value(self):
         """Set the dollar amount the clue was worth.
-        
+
         Value is stored as an int in self.value and represents the dollar amount
         won or lost by a correct or incorrect response. It determines whether
         the clue is a daily double and sets self.daily_double as a boolean.
@@ -437,11 +437,11 @@ class Clue:
         else:
             self.daily_double = False
             self.value = int(val.text.strip().strip('$'))
-            
+
     def __str__(self):
         """Return the clue text."""
         return(self.text)
-    
+
     def __dict__(self):
         """Return a dictionary of public attributes."""
         if self.round_ == 'final_jeopardy_round':
@@ -470,17 +470,17 @@ class Clue:
             'responses':self.responses,
         }
         return(dictionary)
-        
+
 class FinalJeopardyClue(Clue):
     """An extension of the Clue class to handle Final Jeopardy data.
-    
+
     Attributes:
       Defined here:
         wagers      A list of the amount each contestant wagered.
-        contestants A list of the first names of each contestant who 
+        contestants A list of the first names of each contestant who
                       participated in Final Jeopardy.
         responses   A list of the responses each contestant gave.
-        
+
       Inhereted from Clue (see documentation there):
         category
         text
@@ -490,9 +490,9 @@ class FinalJeopardyClue(Clue):
         row
         column
     """
-    
+
     fj_regex = re.compile(r'<td(?: class=\"(.*?)\"|.*?)>(.*?)</td>')
-    
+
     def __init__(self,bs4_tag=None,game=None,load=False,**kwargs):
         if game and load:
             self.loaded = True
@@ -516,27 +516,39 @@ class FinalJeopardyClue(Clue):
         self.responses = [x[1][1] for x in fj_data]
         self.wagers = [x[2][1] for x in fj_data]
         correct = [x[0][0] for x in fj_data]
-        self._correct_=[]
+        correct = []
         for value in correct:
             if value == 'wrong':
-                self._correct_.append(False)
+                correct.append(False)
             elif value == 'right':
-                self._correct_.append(True)
+                correct.append(True)
             else:
                 raise ValueError('Response neither right nor wrong?')
-                
+        self._correct_ = []
+        for i in range(len(self.contestants)):
+            cont = self.contestants[i]
+            tv = correct[i]
+            val = self.wagers[i]
+            self._correct_.append(
+                (
+                    cont,
+                    tv,
+                    val
+                )
+            )
+
     def correct(self,method='any',contestant=None):
         """Extends Clue.correct() to retrieve particular contestant responses.
-        
-        By default, the function returns whether any contestant responded 
+
+        By default, the function returns whether any contestant responded
             correctly. If no contestant is specified, the method parameter is
             passed to Clue.correct() and that value returned, if a contestant
             is specified, method is meaningless and disregarded.
         If contestant is an integer, it is treated as an index and the boolean
-            at that location in FJC._correct_ is returned. If it is a string 
-            it is treated as a contestant's name and the boolean for that 
-            contestant's response is returned. If it is a list or tuple, each 
-            element is passed individually to FJC.clue to be evaluated 
+            at that location in FJC._correct_ is returned. If it is a string
+            it is treated as a contestant's name and the boolean for that
+            contestant's response is returned. If it is a list or tuple, each
+            element is passed individually to FJC.clue to be evaluated
             recursively and a list of the returns is returned.
         """
         c_type = type(contestant)
@@ -554,7 +566,7 @@ class FinalJeopardyClue(Clue):
             return(out)
         else:
             raise TypeError(f'Type {c_type.__name__} not supported')
-            
+
     def _load(self,game,**kwargs):
         """Set public attributes from JSON input."""
         super()._load(game,kwargs)
@@ -562,7 +574,7 @@ class FinalJeopardyClue(Clue):
         self.responses = kwargs['responses']
         self.contestants = kwargs['contestants']
         self._correct_ = kwargs['correct']
-        
+
     def __dict__(self):
         """Return dictionary of public attributes."""
         d = super().__dict__()
