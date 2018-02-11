@@ -1,6 +1,6 @@
 # Jeopardy! Archive Parser
 
-A program to compile a database of Jeopardy questions and incorporate tools for linguistics analysis of those data. This program scrapes [J!-Archive](http://www.j-archive.com) and stores teh data listed there in a custom data structure for easy manipulation and retrieval. Using the [Natural Language Toolkit](https://github.com/nltk/nltk) 
+A program to compile a database of Jeopardy questions and incorporate tools for linguistics analysis of those data. This program scrapes [J!-Archive](http://www.j-archive.com) and stores teh data listed there in a custom data structure for easy manipulation and retrieval. Using the [Natural Language Toolkit](https://github.com/nltk/nltk)
 it incorporates calls to Stanford's [CoreNLP](https://github.com/stanfordnlp/CoreNLP) and Princeton's [WordNet](https://wordnet.princeton.edu/) for syntactic and semantic analysis of the data. The Jeopardy! Archive Parser is distributed under the terms of the BSD 3-clause license.
 
 ## Getting Started
@@ -58,7 +58,7 @@ for game in scraper.games:
     for round_ in game.clues:
         for clue in game.clues[round_]:
             print(clue.value)
-            
+
 # Print only clues from games in October
 for game in scraper.games:
     if game.month == 'October':
@@ -68,6 +68,11 @@ for game in scraper.games:
 ```
 
 Parsing is not yet fully implemented (as of v0.5.0).
+
+## Scraping
+Code dealing with the scraping of data from the jeopardy archive website is located in the file [```Scraper.py```](Scraper.py). It has one class [```Scraper```](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Scraper.py#L14-L160) which contains all attributes and methods of the web scraper.
+
+<h3 id="Scraper-Scraper" style="font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/Scraper.py#L14-L160">Scraper.Scraper(*self, default_wait = 2*)</a></h3>
 
 ## Authors
 
