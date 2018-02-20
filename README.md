@@ -1,6 +1,6 @@
 # Jeopardy! Archive Parser
 
-A program to compile a database of Jeopardy questions and incorporate tools for linguistics analysis of those data. This program scrapes [J!-Archive](http://www.j-archive.com) and stores teh data listed there in a custom data structure for easy manipulation and retrieval. Using the [Natural Language Toolkit](https://github.com/nltk/nltk)
+A program to compile a database of Jeopardy questions and incorporate tools for linguistics analysis of those data. This program scrapes [J!-Archive](http://www.j-archive.com) and stores the data listed there in a custom data structure for easy manipulation and retrieval. Using the [Natural Language Toolkit](https://github.com/nltk/nltk)
 it incorporates calls to Stanford's [CoreNLP](https://github.com/stanfordnlp/CoreNLP) and Princeton's [WordNet](https://wordnet.princeton.edu/) for syntactic and semantic analysis of the data. The Jeopardy! Archive Parser is distributed under the terms of the BSD 3-clause license.
 
 ## Getting Started
@@ -155,6 +155,80 @@ Loads the data from a save file into memory so it can be manipulated with the AP
 ```python
 scraper.load('JData.json')
 ```
+
+## Accessing and manipulating data
+The maximal unit of data is a game represented by a [```Game.Game()```](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L9-L260) instance. It contains attributes relating to information on the game itself, as well as serving as a container for data on each clue that appeared in the game which are
+stored as ```Game.Clue()``` objects and ```Game.FinalJeopardyClue``` objects.
+
+
+<h3 id="Game-Game-init" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L45-L86">Game.Game._\_init\__(*self, page_source=None, url=None, load=False,* \*\**kwargs*)</a></h3>
+A game object is typically initialized by a scraper object and so usage of the init function is rarely useful for users. If you have the source html of a j! archiv epage, or would like to create an instance using your own custom scraper, the html source should be the first argument:
+```python
+url = 'http://www.j-archive.com/showgame.php?game_id=1'
+try:
+  # Python 3
+  import urllib.request
+  with urllib.request.urlopen(url) as response:
+    html = response.read()
+except ImportError:
+  # Python 2
+  import urllib2
+  response = urllib2.urlopen(url)
+  html = response.read()
+
+game = Game.Game.__init__(html,url) # Game instance.
+```
+
+<h3 id="Game-Game-score" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L45-L86">Game.Game.score_graph(*self, plt=None*)</a></h3>
+If called with a matplotlib or pyplot instance as an argument, it will plot a graph of the score by clue number:
+```Python
+import matplotlib.pyplot as plt
+
+game.score_graph(plt)
+```
+If called without argument it returns the score data as a dictionary with contestant names as keys and a list of scores over time for that contestant as the value. It can be used to create your own plots:
+```Python
+score_data = game.score_graph()
+for contestant in score_data:
+  score = score_data[contestant]
+  plt.plot(list(range(len(score))), score)
+plt.show()
+```
+
+<h3 id="Game-Clue-init" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L45-L86">Game.Clue.__init__(*self, bs4_tag=None, game=None, load=False,*\*\**kwargs*)</a></h3>
+Clue instances are rarely if ever user generated. Rather they are [created automatically](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L225) for all clues in a game [when a ```Game.Game()``` instance is created](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L77). For more information [see the code](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L305-L334).
+
+<h3 id="Game-Clue-correct" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L45-L86">Game.Clue.correct(*self, method = 'any'*)</a></h3>
+This method returns information regarding whether the clue was answered correctly or not. It can be called with or without an optional parameter which determines how the function determines what to return.
+```Python
+game = scraper.games[0]
+clue = game.clues['jeopardy_round'][0]
+
+# The following return True if any response to the clue was correct.
+clue.correct()             # This is the default operation.
+clue.correct('any')        # Full name.
+clue.correct('a')          # Abbreviation.
+clue.correct(method='any') # Keyword explicit.
+# The following return True if no response to the clue was correct.
+clue.correct('any-false')
+clue.correct('af')
+
+#The following return True only if all responses were incorrect.
+clue.correct('no-correct')
+clue.correct('nc')
+
+# The following return how many people buzzed in to give an answer.
+clue.correct('length')
+clue.correct('l')
+
+# The following does not return a boolean, rather a list of tuples with
+#   contestant names as the first item and boolean value of the response as
+#   the second item.
+clue.correct('all')
+```
+
+## Accessing data
+
 
 ## Authors
 
