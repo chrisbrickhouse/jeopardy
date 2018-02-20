@@ -36,10 +36,7 @@ class Game:
 
     Methods:
         __init__    Initializes the game object.
-        score_graph If given a matplotlib instance, will plot each player's
-                      score by clue, otherwise returns a the data as dictionary
-                      where keys are contestant names and values are lists of
-                      the data used to plot.
+        score_graph Return and plot data on score by clue.
     """
 
     title_regex = re.compile(r'#(\d+).*?([a-zA-Z]+), ([a-zA-Z]+) (\d+), (\d+)')
@@ -89,6 +86,12 @@ class Game:
             }
 
     def score_graph(self, plt=None):
+        """
+        If given a matplotlib instance, will plot each player's
+          score by clue, otherwise returns a the data as dictionary
+          where keys are contestant names and values are lists of
+          the data used to plot.
+        """
         if self.score_data == None:
             self.score_data = self._make_score_data()
         if plt == None:
