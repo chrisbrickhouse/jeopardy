@@ -72,7 +72,7 @@ Parsing is not yet fully implemented (as of v0.5.0).
 ## Scraping
 Code dealing with the scraping of data from the jeopardy archive website is located in the file [```Scraper.py```](Scraper.py). It has one class [```Scraper```](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Scraper.py#L14-L167) which contains all attributes and methods of the web scraper.
 
-<h3 id="Scraper-Scraper-init" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/Scraper.py#L31-L50">Scraper.Scraper.\_\_init\_\_(*self, default_wait = 2*)</a></h3>
+<h3 id="Scraper-Scraper-init" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/Scraper.py#L31-L50">Scraper.Scraper._&#95;init&#95;_(*self, default_wait = 2*)</a></h3>
 This object contains methods for automatically collecting, storing, and analyzing data from the Jeopardy! Archive. It optionally takes a wait time in seconds to override the default. Out of courtesy for the Jeopardy! Archive's servers, users cannot provide a wait time of less than one second. The default is two seconds, which is fine for interactive use and small jobs, but if used in a script or on long ranges of pages, it is recommended that a wait of at least 5 seconds be used to minimize traffic and any potential effects on service.
 ```python
 scraper = Scraper.Scraper()
