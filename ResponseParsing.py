@@ -1,4 +1,4 @@
-__version__ = '0.5.0'
+__version__ = '0.6.0-dev'
 __author__ = 'Christian Brickhouse'
 
 from nltk.corpus import wordnet
@@ -32,9 +32,9 @@ class JeopardyParser():
         return(s)
         
 
-def check_syntax(tree):
-    if tree[0].label() not in ['SBARQ','WHNP']:
+def check_syntax(tree,labels=['SBARQ','WHNP']):
+    if tree[0].label() not in labels:
         print('Malformed question',tree[0].label())
         return(False)
-    elif tree[0].label() in ['SBARQ','WHNP']:
+    elif tree[0].label() in labels:
         return(True)
