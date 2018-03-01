@@ -28,7 +28,7 @@ class Scraper():
         default_wait   Time (in seconds) that the scraper will wait between
                            requests so as not to overload the server.
     """
-    def __init__(self,default_wait=2):
+    def __init__(self,default_wait=2,url='http://localhost:9000'):
         """Initialize the webscraper with a default wait (in seconds).
 
         The method creates a browser object used to access the various web
@@ -47,7 +47,7 @@ class Scraper():
             raise ValueError('Wait must be at least 1 second as a courtesy.')
         else:
             self.default_wait = default_wait
-        self.jparse = ResponseParsing.JeopardyParser()
+        self.jparse = ResponseParsing.JeopardyParser(url)
 
     def scrape(
             self,
