@@ -31,9 +31,9 @@ class Game:
                       all the Clue objects for that round.
 
         TO ADD:
-            *       Various objects related to score statistics and team 
+            *       Various objects related to score statistics and team
                       batting average.
-    
+
     Methods:
         __init__    Initializes the game object.
         score_graph Return and plot data on score by clue.
@@ -489,6 +489,8 @@ class Clue:
             msplit = match.split(':')
             speaker = msplit[0]
             speech = ':'.join(msplit[1:])
+            if '[*]' in speech:
+                speech = speech.replace(r'[*]',self.target)
             self.responses.append((speaker.strip(),speech.strip()))
 
     def _set_value(self):
