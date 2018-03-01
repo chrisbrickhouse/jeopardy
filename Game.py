@@ -31,9 +31,9 @@ class Game:
                       all the Clue objects for that round.
 
         TO ADD:
-            *       Various objects related to score statistics and team
-                      batting avgerage.
-
+            *       Various objects related to score statistics and team 
+                      batting average.
+    
     Methods:
         __init__    Initializes the game object.
         score_graph Return and plot data on score by clue.
@@ -73,9 +73,11 @@ class Game:
         self.score_data = None
         notEmpty = self._set_raw_clues()
         if notEmpty:
+            self.empty = False
             self._set_categories()
             self._parse_clues()
         else:
+            self.empty = True
             self.clues={}
             for round_ in self.rounds:
                 self.clues[round_] = []
@@ -481,7 +483,7 @@ class Clue:
                 self._correct_.append((player,True))
             elif response[0] == 'wrong':
                 self._correct_.append((player,False))
-        quotation = re.findall(r'\((.*?)\)',annotation)
+        quotation = re.findall(r'\((.*?)\)',self.annotation)  #not sure if self.annotation or annotation is correct
         self.responses=[]
         for match in quotation:
             msplit = match.split(':')
@@ -593,12 +595,12 @@ class FinalJeopardyClue(Clue):
                 response=[]
         self.contestants = [x[0][1] for x in fj_data]
         self.responses = [x[1][1] for x in fj_data]
-        self.wagers = [x[2][1] for x in fj_data]
+        self.wagers = [int(x[2][1].replace(',','').strip('$')) for x in fj_data]
         correct = [x[0][0] for x in fj_data]
-        print(self.contestants)
-        print(self.responses)
-        print(self.wagers)
-        print(correct)
+        #print(self.contestants)
+        #print(self.responses)
+        #print(self.wagers)
+        #print(correct)
         correctval = []
         for value in correct:
             if value == 'wrong':
@@ -607,8 +609,8 @@ class FinalJeopardyClue(Clue):
                 correctval.append(True)
             else:
                 raise ValueError('Response neither right nor wrong?')
-        print(correctval)
-        print(repr(fj_data))
+        #print(correctval)
+        #print(repr(fj_data))
         self._correct_ = []
         for i in range(len(self.contestants)):
             cont = self.contestants[i]
