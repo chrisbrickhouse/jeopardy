@@ -104,6 +104,24 @@ class Game:
             plt.show()
             return()
 
+    def conll(self,parser,txt='all',jeopardy_round='all',style=10):
+        clues = self.clues
+        if jeopardy_round == 'all':
+            rounds = [
+                'jeopardy_round',
+                'double_jeopardy_round',
+                'final_jeopardy_round'
+            ]
+        elif type(jeopardy_round) != list:
+            rounds = [jeopardy_round]
+        try:
+            for round_ in clues:
+                for clue in clues[round_]:
+                    clue.conll(parser,txt='text',style=style)
+                    clue.conll(parser,txt='responses',style=style)
+        except NameError as e:
+            print(f'{e} is not a name of a jeopardy round.')
+
     def _make_score_data(self):
         max_i = 0
         for clue in self.clues['jeopardy_round']:
@@ -297,6 +315,8 @@ class Clue:
     Methods:
         __init__      Initializes the Clue object and calls the various
                         functions to set the attributes.
+        conll         Returns a dependency parse of the clue text or responses
+                        in CoNLL format.
 
     """
 
@@ -389,6 +409,33 @@ class Clue:
             return(len(self._correct_))
         else:
             raise ValueError(f"Unknown method argument {method}")
+
+    def conll(self, parser, txt='text', style=10):
+        if type(parser) != CoreNLPDependencyParser:
+            raise TypeError('Parser must be a CoreNLP Dependency Parser.')
+        if txt == 'text':
+            try:
+                return(self.text_conll)
+            except AttributeError:
+                # CoNLL format for clue text.
+                txt = self.text
+                p,=parser.raw_parse(txt)
+                self.text_conll = p.to_conll(style)
+                return(self.text_conll)
+        elif txt == 'responses':
+            try:
+                return(self.responses_conll)
+            except AttributeError:
+                responses_conll = []
+                for r in self.responses:
+                    contestant = r[0]
+                    text = r[1]
+                    p,=parser.raw_parse(text)
+                    conll = p.to_conll(style)
+                    tup = (contestant,conll)
+                    responses_conll.append(tup)
+                self.responses_conll = responses_conll
+                return(responses_conll)
 
     def _load(self,game,**kwargs):
         """Set public attributes from JSON input"""
@@ -596,7 +643,7 @@ class FinalJeopardyClue(Clue):
                 fj_data.append(response)
                 response=[]
         self.contestants = [x[0][1] for x in fj_data]
-        self.responses = [x[1][1] for x in fj_data]
+        self.responses = [(x[0][1],x[1][1]) for x in fj_data]
         self.wagers = [int(x[2][1].replace(',','').strip('$')) for x in fj_data]
         correct = [x[0][0] for x in fj_data]
         #print(self.contestants)
