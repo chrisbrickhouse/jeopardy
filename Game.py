@@ -4,6 +4,7 @@ __author__ = 'Christian Brickhouse'
 import re
 
 from bs4 import BeautifulSoup as soup
+from nltk.parse.corenlp import CoreNLPDependencyParser
 
 
 class Game:
@@ -115,12 +116,12 @@ class Game:
         elif type(jeopardy_round) != list:
             rounds = [jeopardy_round]
         try:
-            for round_ in clues:
+            for round_ in rounds:
                 for clue in clues[round_]:
                     clue.conll(parser,txt='text',style=style)
                     clue.conll(parser,txt='responses',style=style)
         except NameError as e:
-            print(f'{e} is not a name of a jeopardy round.')
+            print(f'ValueError: {round_} is not a name of a jeopardy round.')
 
     def _make_score_data(self):
         max_i = 0
@@ -410,7 +411,7 @@ class Clue:
         else:
             raise ValueError(f"Unknown method argument {method}")
 
-    def conll(self, parser, txt='text', style=10):
+    def conll(self, parser=None, txt='text', style=10):
         if type(parser) != CoreNLPDependencyParser:
             raise TypeError('Parser must be a CoreNLP Dependency Parser.')
         if txt == 'text':

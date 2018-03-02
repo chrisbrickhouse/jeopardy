@@ -28,7 +28,12 @@ class Scraper():
         default_wait   Time (in seconds) that the scraper will wait between
                            requests so as not to overload the server.
     """
-    def __init__(self,default_wait=2,url='http://localhost:9000'):
+    def __init__(
+            self,
+            default_wait = 2,
+            url = 'http://localhost:9000',
+            conll = False,
+        ):
         """Initialize the webscraper with a default wait (in seconds).
 
         The method creates a browser object used to access the various web
@@ -48,6 +53,14 @@ class Scraper():
         else:
             self.default_wait = default_wait
         self.jparse = ResponseParsing.JeopardyParser(url)
+        self.conll = conll
+        if conll:
+            # conll defaults to False so if someone is using this argument
+            # they likely know what they're doing, but if not, try to protect
+            # the user from themselves.
+            print('INFO: Argument \'conll\' is set to True.')
+            print('      The scraper will attempt to parse every sentence in')
+            print('      the corpus which will increase times and cpu usage.')
 
     def scrape(
             self,
@@ -96,6 +109,7 @@ class Scraper():
             ValueError if stop value is less than start.
         """
         request_time = 0
+        conll = self.conll
         if type(wait) is not int:
             wait = self.default_wait
         if stop == None:
@@ -120,6 +134,8 @@ class Scraper():
                 if self._checkEnd(html,i):
                     break
             game = Game.Game(html,url)
+            if conll:
+                game.conll(self.jparse.dep_parser)
             self.games.append(game)
 
     def save(self,fname='JeopardyData.json'):
