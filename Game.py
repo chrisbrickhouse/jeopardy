@@ -311,6 +311,10 @@ class Clue:
         order_num     An integer representing the clue number, that is, 1 is the
                         first revealed clue, 10 is the tenth revealed clue, etc.
                         Numbers are only for the current round.
+        text_conll    Tab seperated string of the dependency tree in CoNLL form.
+        responses_conll List of tuples where the first tuple item is the speaker
+                        and the second item is a tab seperated string of the
+                        dependency tree in CoNLL format.
         *correct     (Made method in 0.6.0)
 
     Methods:
@@ -341,6 +345,8 @@ class Clue:
         self.tag_obj = bs4_tag
         self.game = game
         self.round_ = round_
+        self.text_conll = None
+        self.responses_conll = None
         self._set_text()
         self._set_responses()
         if round_ != 'final_jeopardy_round':
@@ -411,32 +417,30 @@ class Clue:
         else:
             raise ValueError(f"Unknown method argument {method}")
 
-    def conll(self, parser=None, txt='text', style=10):
+    def conll(self, parser, txt='text', style=10):
         if type(parser) != CoreNLPDependencyParser:
             raise TypeError('Parser must be a CoreNLP Dependency Parser.')
         if txt == 'text':
-            try:
-                return(self.text_conll)
-            except AttributeError:
-                # CoNLL format for clue text.
-                txt = self.text
-                p,=parser.raw_parse(txt)
-                self.text_conll = p.to_conll(style)
-                return(self.text_conll)
+            # CoNLL format for clue text.
+            txt = self.text
+            p,=parser.raw_parse(txt)
+            self.text_conll = p.to_conll(style)
+            return(self.text_conll)
         elif txt == 'responses':
-            try:
-                return(self.responses_conll)
-            except AttributeError:
-                responses_conll = []
-                for r in self.responses:
-                    contestant = r[0]
-                    text = r[1]
-                    p,=parser.raw_parse(text)
-                    conll = p.to_conll(style)
-                    tup = (contestant,conll)
-                    responses_conll.append(tup)
-                self.responses_conll = responses_conll
-                return(responses_conll)
+            responses_conll = []
+            for r in self.responses:
+                contestant = r[0]
+                text = r[1]
+                if text == '':
+                    continue
+                #print(self.order_num)
+                #print(contestant,repr(text))
+                p,=parser.raw_parse(text)
+                conll = p.to_conll(style)
+                tup = (contestant,conll)
+                responses_conll.append(tup)
+            self.responses_conll = responses_conll
+            return(responses_conll)
 
     def _load(self,game,**kwargs):
         """Set public attributes from JSON input"""
@@ -448,6 +452,8 @@ class Clue:
         self.column = kwargs['column']
         self.target = kwargs['target']
         self.annotation = kwargs['annotation']
+        self.text_conll = kwargs['text_conll']
+        self.responses_conll = kwargs['responses_conll']
         if self.round_ != 'final_jeopardy_round':
             self.order_num = kwargs['order_num']
             self.daily_double = kwargs['daily_double']
@@ -585,21 +591,23 @@ class Clue:
                 'target':self.target,
                 'annotation':self.annotation,
             }
-            return(dictionary)
-        dictionary = {
-            'round_':self.round_,
-            'order_num':self.order_num,
-            'daily_double':self.daily_double,
-            'value':self.value,
-            'text':self.text,
-            'row':self.row,
-            'column':self.column,
-            'category':self.category,
-            'target':self.target,
-            'annotation':self.annotation,
-            'correct':self._correct_,
-            'responses':self.responses,
+        else:
+            dictionary = {
+                'round_':self.round_,
+                'order_num':self.order_num,
+                'daily_double':self.daily_double,
+                'value':self.value,
+                'text':self.text,
+                'row':self.row,
+                'column':self.column,
+                'category':self.category,
+                'target':self.target,
+                'annotation':self.annotation,
+                'correct':self._correct_,
+                'responses':self.responses,
         }
+        dictionary['text_conll'] = self.text_conll
+        dictionary['responses_conll'] = self.responses_conll
         return(dictionary)
 
 class FinalJeopardyClue(Clue):
