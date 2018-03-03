@@ -126,7 +126,7 @@ class Scraper():
             if (time.time() - request_time) < wait:
                 print('Requesting too fast, waiting %s seconds...'%wait)
                 time.sleep(wait)
-                print('Continuing')
+                #print('Continuing')
             self.browser.get(url)
             request_time = time.time()
             html = self.browser.page_source

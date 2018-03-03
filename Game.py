@@ -643,7 +643,7 @@ class FinalJeopardyClue(Clue):
         count = 0
         fj_data = []
         response = []
-        print(self.annotation)
+        #print(self.annotation)
         for match in matches:
             response.append(match)
             count+=1
@@ -681,7 +681,7 @@ class FinalJeopardyClue(Clue):
                     val
                 )
             )
-        print(self._correct_)
+        #print(self._correct_)
 
     def correct(self,method='any',contestant=None):
         """Extends Clue.correct() to retrieve particular contestant responses.
@@ -743,8 +743,9 @@ class Contestant():
     def _update_series(self, clue, resp, i, fj = False):
         guessers = [x[0] for x in resp]
         if fj == True:
-            print(resp)
-            print(guessers)
+            pass
+            #print(resp)
+            #print(guessers)
         if self.first_name in guessers:
             tv = [x[1] for x in resp if x[0] == self.first_name][0]
             if fj == True:
