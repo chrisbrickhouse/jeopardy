@@ -80,9 +80,9 @@ for game in scraper.games:
 Parsing is not yet fully implemented (as of v0.5.0).
 
 ## Scraping
-Code dealing with the scraping of data from the jeopardy archive website is located in the file [```JCorpus.py```](JCorpus.py). It has one class [```JCorpus```](https://github.com/chrisbrickhouse/jeopardy/blob/dev/JCorpus.py#L14-L167) which contains all attributes and methods of the web scraper.
+Code dealing with the scraping of data from the jeopardy archive website is located in the file [```JCorpus.py```](JCorpus.py). It has one class [```Scraper```](https://github.com/chrisbrickhouse/jeopardy/blob/master/JCorpus.py#L14-L201) which contains all attributes and methods of the web scraper.
 
-<h3 id="JCorpus-Scraper-init" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/JCorpus.py#L31-L50">JCorpus.Scraper._&#95;init&#95;_(*self, default_wait = 2, url = 'http://localhost:9000', conll = False*)</a></h3>
+<h3 id="JCorpus-Scraper-init" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/master/JCorpus.py#L31-L63">JCorpus.Scraper._&#95;init&#95;_(self, default_wait = 2, url = 'http://localhost:9000', conll = False)</a></h3>
 This object contains methods for automatically collecting, storing, and analyzing data from the Jeopardy! Archive.
 
 It optionally takes a wait time in seconds to override the default of 2 seconds. Out of courtesy for the Jeopardy! Archive's servers, users cannot provide a wait time of less than one second; if a default_wait of less than 1 second is provided, it raises a ValueError. Two seconds is fine for interactive use and small jobs, but if used in a script or on long ranges of pages, it is recommended that a wait of at least 5 seconds be used to minimize traffic and any potential effects on service.
@@ -109,17 +109,17 @@ scraper = JCorpus.Scraper(conll = True)  # Will dependency parse clues as scrape
 ```
 
 The length of an instance is equal to the number of games it has scraped:
-```Python
+```python
 len(scraper) == len(scraper.games)
 ```
 
 The instance as a string is a string of the game number and date for all the games it has scraped separated by newlines. This is useful for getting an overview of the games in the archive, especially in a print statement:
-```Python
+```python
 str(scraper)  # Newline separated string of game titles in scraper.games
 print(str(scraper))  # More readable
 ```
 
-<h3 id="JCorpus-Scraper-scrape" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/JCorpus.py#L52-L123">JCorpus.Scraper.scrape(*self, start, stop = None, step = 1, wait = None, random = False*)</a></h3>
+<h3 id="JCorpus-Scraper-scrape" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/master/JCorpus.py#L65-L139">JCorpus.Scraper.scrape(self, start, stop = None, step = 1, wait = None, random = False)</a></h3>
 The most basic use of this method follows the syntax of the python built-in function ```range()```:
 
 ```python
@@ -171,14 +171,14 @@ scraper.scrape(i)
 <h4> On sampling</h4>
 Page ids are not chronological for episodes of jeopardy but are a chronological numbering of when the game was added to the archive. That is, page id 1 is the first game added to the archive, and page id 4763 is the 4763rd game added to the archive. The first game added to the archive is the first game of the 21st season. All episodes in the archive from prior to season 21 break up the chronological page ids of those afterwards. <!--(**To Do:** see how the random argument affects sampling distribution)-->
 
-<h3 id="JCorpus-Scraper-save" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/JCorpus.py#L125-L138">JCorpus.Scraper.save(*self, fname = 'JeopardyData.json', sub_files = False*)</a></h3>
+<h3 id="JCorpus-Scraper-save" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/master/JCorpus.py#L141-L162">JCorpus.Scraper.save(self, fname = 'JeopardyData.json', sub_files = False)</a></h3>
 This function outputs a JSON file with all public attributes of the Game, Clue, and FinalJeopardyClue instances in ```self.games```.
 
 It optionally takes the path with file name (or just filename as is the default) as an argument to tell the function where to save the file.
 
 It optionally takes a boolean keyword argument, sub_files, which defaults to false. When false, it outputs all data into one file named ```fname```. When true it creates a JSON file for each year, named 'JeopardyGames_YEAR.json'. If a given year does not have a game scraped, no file is created.
 
-```Python
+```python
 scraper.save()  # Writes data to JeopardyData.json
 scraper.save(fname='JData.json')  # Writes data to JData.json
 scraper.save(sub_files = True)  # Creates a file for each year with >1 game.
@@ -186,7 +186,7 @@ scraper.save(sub_files = True)  # Creates a file for each year with >1 game.
 
 **Note, this method may not up to date in the most recent development versions. An update to this may be a breaking change.**
 
-<h3 id="JCorpus-Scraper-load" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/JCorpus.py#L140-L146">JCorpus.Scraper.load(*self, fname = 'JeopardyData.json', append = False*)</a></h3>
+<h3 id="JCorpus-Scraper-load" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/master/JCorpus.py#L164-L171">JCorpus.Scraper.load(self, fname = 'JeopardyData.json', append = False)</a></h3>
 Loads the data from a save file into memory so it can be manipulated with the API.
 
 It takes an optional argument ```fname``` which is the path and filename of the file to load.
@@ -200,7 +200,7 @@ scraper.load(append=True)  # Reads ./JeopardyData.json and adds it to scraper.ga
 ```
 
 ## Accessing and manipulating data
-The maximal unit of data is a game represented by a [```Game.Game()```](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L9-L260) instance. It contains attributes relating to information on the game itself, as well as serving as a container for data on each clue that appeared in the game which are stored as ```Game.Clue()``` objects and ```Game.FinalJeopardyClue()``` objects in a dictionary of lists, ```Game.clues```, with round names as keys.
+The maximal unit of data is a game represented by a [```Game.Game()```](https://github.com/chrisbrickhouse/jeopardy/blob/master/Game.py#L10-L287) instance. It contains attributes relating to information on the game itself, as well as serving as a container for data on each clue that appeared in the game which are stored as [```Game.Clue()```](https://github.com/chrisbrickhouse/jeopardy/blob/master/Game.py#L290-L617) objects and [```Game.FinalJeopardyClue()```](https://github.com/chrisbrickhouse/jeopardy/blob/master/Game.py#L620-L741) objects in a dictionary of lists, ```Game.clues```, with round names as keys.
 
 ### Game.Game() Public Attributes
 * ```id_``` The id number used by j-archive to index the game.
@@ -216,7 +216,7 @@ The maximal unit of data is a game represented by a [```Game.Game()```](https://
 * ```raw_clues``` (Only available if loaded == False) The bs4 tags for the clues.
 
 
-<h3 id="Game-Game-init" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L45-L86">Game.Game._\_init\__(*self, page_source=None, url=None, load=False,* \*\**kwargs*)</a></h3>
+<h3 id="Game-Game-init" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/master/Game.py#L47-L90">Game.Game.&#95;&#95;init&#95;&#95;(self, page_source=None, url=None, load=False,kwargs)</a></h3>
 A game object is typically initialized by a scraper object and so usage of the init function is rarely useful for users. If you have the source html of a j! archivepage, or would like to create an instance using your own custom scraper, the html source should be the first argument:
 
 ```python
@@ -237,16 +237,17 @@ game = Game.Game.__init__(html,url) # Game instance.
 
 The ```load``` keyword argument is used by ```Scraper.load()``` to indicate that the game was read from file rather than scraped. This is important because certain attributes and methods are only defined when ```Game.loaded``` is False.
 
-<h3 id="Game-Game-score" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L45-L86">Game.Game.score_graph(*self, plt=None*)</a></h3>
+<h3 id="Game-Game-score" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/master/Game.py#L92-L109">Game.Game.score_graph(self, plt=None)</a></h3>
 If called with a matplotlib or pyplot instance as an argument, it will plot a graph of the score by clue number:
-```Python
+```python
 import matplotlib.pyplot as plt
 
 game.score_graph(plt)
 ```
 
 If called without argument it returns the score data as a dictionary with contestant names as keys and a list of scores over time for that contestant as the value. It can be used to create your own plots:
-```Python
+
+```python
 score_data = game.score_graph()
 for contestant in score_data:
   score = score_data[contestant]
@@ -274,12 +275,13 @@ plt.show()
 * ```contestants``` A list of the first names of each contestant in Final Jeopardy (in some games, not all contestants participated because of scores and rules). The index of a contestant here is the index for their data in ```wagers```.
 * ```wagers``` A list of the amount each contestant wagered.
 
-<h3 id="Game-Clue-init" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L45-L86">Game.Clue.__init__(*self, bs4_tag=None, game=None, load=False,*\*\**kwargs*)</a></h3>
-Clue instances are rarely if ever user generated. Rather they are [created automatically](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L225) for all clues in a game [when a ```Game.Game()``` instance is created](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L77). For more information [see the code](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L305-L334).
+<h3 id="Game-Clue-init" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/master/Game.py#L338-L369">Game.Clue.&#95;&#95;init&#95;&#95;(self, bs4_tag=None, game=None, load=False,kwargs)</a></h3>
+Clue instances are rarely if ever user generated. Rather they are created automatically<!--[created automatically](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L225)--> for all clues in a game when a ```Game.Game()``` instance is created<!--[when a ```Game.Game()``` instance is created](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L77)-->. For more information [see the code](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L338-L369).
 
-<h3 id="Game-Clue-correct" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L45-L86">Game.Clue.correct(*self, method = 'any'*)</a></h3>
+<h3 id="Game-Clue-correct" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/master/Game.py#L371-L424">Game.Clue.correct(self, method = 'any')</a></h3>
 This method returns information regarding whether the clue was answered correctly or not. It can be called with or without an optional parameter which determines how the function determines what to return.
-```Python
+
+```python
 game = scraper.games[0]
 clue = game.clues['jeopardy_round'][0]
 
@@ -306,10 +308,10 @@ clue.correct('l')
 clue.correct('all')
 ```
 
-<h3 id="Game-FJClue" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L620-L741">Game.FinalJeopardyClue.&#95;&#95;init&#95;&#95;(*self,bs4_tag=None,game=None,load=False,kwargs*)</a></h3>
+<h3 id="Game-FJClue" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/master/Game.py#L642-L692">Game.FinalJeopardyClue.&#95;&#95;init&#95;&#95;(self,bs4_tag=None,game=None,load=False,kwargs)</a></h3>
 This is an extension of the Game.Clue() class for the specifics of Final Jeopardy! clues, and as such has similar specifics. It is rarely, if ever, useful to call, being called automatically during scraping. It has one public method.
 
-<h3 id="Game-FJClue-correct" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L620-L741">Game.FinalJeopardyClue.correct(*self,method='any', contestant=None*)</a></h3>
+<h3 id="Game-FJClue-correct" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/master/Game.py#L694-L724">Game.FinalJeopardyClue.correct(self,method='any', contestant=None)</a></h3>
 By default, it functions the same as Game.Clue.correct() and extends the functionality by allowing the user to specify a contestant to check if their response was correct or not.
 
 ## Authors
