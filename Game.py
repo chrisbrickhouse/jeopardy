@@ -188,7 +188,7 @@ class Game:
                                                         **clue
                                                         ))
             else:
-                print(rnd)
+                #print(rnd)
                 self.clues[rnd].append(Clue(game=self,load=True,**clue))
 
     def _set_raw_clues(self):
@@ -445,7 +445,7 @@ class Clue:
 
     def _load(self,game,rnd=None,**kwargs):
         """Set public attributes from JSON input"""
-        print(kwargs.keys())
+        #print(kwargs.keys())
         self.game = game
         #self.round_ = rnd
         self.text = kwargs['text']
