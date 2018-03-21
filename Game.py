@@ -97,7 +97,7 @@ class Game:
         """
         if self.score_data == None:
             self.score_data = self._make_score_data()
-        if self.score_data = False:
+        if self.score_data == False:
             raise ValueError('Unable to get score data.')
         if plt == None:
             return(self.score_data)
