@@ -276,7 +276,10 @@ plt.show()
 * ```wagers``` A list of the amount each contestant wagered.
 
 <h3 id="Game-Clue-init" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/master/Game.py#L338-L369">Game.Clue.&#95;&#95;init&#95;&#95;(self, bs4_tag=None, game=None, load=False,kwargs)</a></h3>
-Clue instances are rarely if ever user generated. Rather they are created automatically<!--[created automatically](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L225)--> for all clues in a game when a ```Game.Game()``` instance is created<!--[when a ```Game.Game()``` instance is created](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L77)-->. For more information [see the code](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L338-L369).
+Clue instances are rarely if ever user generated. Rather they are created automatically for all clues in a game when a ```Game.Game()``` instance is created. For more information [see the code](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L338-L369).
+
+<!--[created automatically](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L225)-->
+<!--[when a ```Game.Game()``` instance is created](https://github.com/chrisbrickhouse/jeopardy/blob/dev/Game.py#L77)-->
 
 <h3 id="Game-Clue-correct" style="%font-family: monospace;"><a href="https://github.com/chrisbrickhouse/jeopardy/blob/master/Game.py#L371-L424">Game.Clue.correct(self, method = 'any')</a></h3>
 This method returns information regarding whether the clue was answered correctly or not. It can be called with or without an optional parameter which determines how the function determines what to return.
