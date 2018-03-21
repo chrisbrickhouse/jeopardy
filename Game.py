@@ -180,15 +180,16 @@ class Game:
             'final_jeopardy_round':[]
         }
         for clue in kwargs['clues']:
-            round_ = clue['round_']
-            if round_ == 'final_jeopardy_round':
-                self.clues[round_].append(FinalJeopardyClue(
-                                                            game=self,
-                                                            load=True,
-                                                            **clue
-                                                            ))
+            rnd = clue['round_']
+            if rnd == 'final_jeopardy_round':
+                self.clues[rnd].append(FinalJeopardyClue(
+                                                        game=self,
+                                                        load=True,
+                                                        **clue
+                                                        ))
             else:
-                self.clues[round_].append(Clue(game=self,load=True,**clue))
+                print(rnd)
+                self.clues[rnd].append(Clue(game=self,load=True,**clue))
 
     def _set_raw_clues(self):
         """Add all bs4 Tag objects for clues to a list, self.raw_clues"""
@@ -265,7 +266,7 @@ class Game:
         clues = []
         for round_ in self.clues.keys():
             for clue in self.clues[round_]:
-                clues.append(clue.__dict__())
+                    clues.append(clue.__dict__())
         dictionary = {
             'id_':self.id_,
             'title':self.title,
@@ -337,6 +338,7 @@ class Clue:
                 load=False,
                 **kwargs
                 ):
+        self.round_ = round_
         if game and load:
             self.loaded = True
             self._load(game,**kwargs)
@@ -344,7 +346,6 @@ class Clue:
         self.loaded = False
         self.tag_obj = bs4_tag
         self.game = game
-        self.round_ = round_
         self.text_conll = None
         self.responses_conll = None
         self._set_text()
@@ -442,10 +443,11 @@ class Clue:
             self.responses_conll = responses_conll
             return(responses_conll)
 
-    def _load(self,game,**kwargs):
+    def _load(self,game,rnd=None,**kwargs):
         """Set public attributes from JSON input"""
+        print(kwargs.keys())
         self.game = game
-        self.round_ = kwargs['round_']
+        #self.round_ = rnd
         self.text = kwargs['text']
         self.category = kwargs['category']
         self.row = kwargs['row']
@@ -633,9 +635,10 @@ class FinalJeopardyClue(Clue):
     fj_regex = re.compile(r'<td(?: class=\"(.*?)\"|.*?)>(.*?)</td>')
 
     def __init__(self,bs4_tag=None,game=None,load=False,**kwargs):
+        self.round_ = 'final_jeopardy_round'
         if game and load:
             self.loaded = True
-            self._load(game,kwargs)
+            self._load(game,**kwargs)
             return(None)
         self.loaded = False
         super().__init__(bs4_tag,game,'final_jeopardy_round')
@@ -717,7 +720,7 @@ class FinalJeopardyClue(Clue):
 
     def _load(self,game,**kwargs):
         """Set public attributes from JSON input."""
-        super()._load(game,kwargs)
+        super()._load(game,**kwargs)
         self.wagers = kwargs['wagers']
         self.responses = kwargs['responses']
         self.contestants = kwargs['contestants']
