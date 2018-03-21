@@ -38,6 +38,7 @@ class Game:
     Methods:
         __init__    Initializes the game object.
         score_graph Return and plot data on score by clue.
+        conll       Dependency parse the clues.
     """
 
     title_regex = re.compile(r'#(\d+).*?([a-zA-Z]+), ([a-zA-Z]+) (\d+), (\d+)')
