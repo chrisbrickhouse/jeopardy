@@ -97,6 +97,8 @@ class Game:
         """
         if self.score_data == None:
             self.score_data = self._make_score_data()
+        if self.score_data = False:
+            raise ValueError('Unable to get score data.')
         if plt == None:
             return(self.score_data)
         else:
@@ -131,7 +133,9 @@ class Game:
             i = clue.order_num
             resp = clue.correct('all')
             for contestant in self.contestants:
-                contestant._update_series(clue, resp, i)
+                x = contestant._update_series(clue, resp, i)
+                if x == False:
+                    return(False)
             if i > max_i:
                 max_i = i
         offset = max_i
@@ -762,7 +766,7 @@ class Contestant():
                 self.score_series[i] = val
             except:
                 print(i)
-                exit()
+                return(False)
 
     def _make_series(self):
         for i in range(len(self.score_series)):
