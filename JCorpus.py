@@ -161,11 +161,12 @@ class Scraper():
         with open(fname,'w') as f:
             f.write(json_output)
 
-    def load(self,fname='JeopardyData.json'):
+    def load(self,fname='JeopardyData.json',append=False):
         """Read data in from a JSON file."""
         with open(fname,'r') as f:
             json_input = json.load(f)
-        self.games = []
+        if not append:
+            self.games = []
         for game in json_input:
             self.games.append(Game.Game(load=True,**game))
 
