@@ -4,6 +4,7 @@ __author__ = 'Christian Brickhouse'
 import re
 
 from bs4 import BeautifulSoup as soup
+from nltk.parse.corenlp import CoreNLPDependencyParser
 
 
 class Game:
@@ -32,7 +33,7 @@ class Game:
 
         TO ADD:
             *       Various objects related to score statistics and team
-                      batting avgerage.
+                      batting average.
 
     Methods:
         __init__    Initializes the game object.
@@ -73,9 +74,11 @@ class Game:
         self.score_data = None
         notEmpty = self._set_raw_clues()
         if notEmpty:
+            self.empty = False
             self._set_categories()
             self._parse_clues()
         else:
+            self.empty = True
             self.clues={}
             for round_ in self.rounds:
                 self.clues[round_] = []
@@ -101,6 +104,24 @@ class Game:
                 plt.plot(cont.score_series)
             plt.show()
             return()
+
+    def conll(self,parser,txt='all',jeopardy_round='all',style=10):
+        clues = self.clues
+        if jeopardy_round == 'all':
+            rounds = [
+                'jeopardy_round',
+                'double_jeopardy_round',
+                'final_jeopardy_round'
+            ]
+        elif type(jeopardy_round) != list:
+            rounds = [jeopardy_round]
+        try:
+            for round_ in rounds:
+                for clue in clues[round_]:
+                    clue.conll(parser,txt='text',style=style)
+                    clue.conll(parser,txt='responses',style=style)
+        except NameError as e:
+            print(f'ValueError: {round_} is not a name of a jeopardy round.')
 
     def _make_score_data(self):
         max_i = 0
@@ -290,11 +311,17 @@ class Clue:
         order_num     An integer representing the clue number, that is, 1 is the
                         first revealed clue, 10 is the tenth revealed clue, etc.
                         Numbers are only for the current round.
+        text_conll    Tab seperated string of the dependency tree in CoNLL form.
+        responses_conll List of tuples where the first tuple item is the speaker
+                        and the second item is a tab seperated string of the
+                        dependency tree in CoNLL format.
         *correct     (Made method in 0.6.0)
 
     Methods:
         __init__      Initializes the Clue object and calls the various
                         functions to set the attributes.
+        conll         Returns a dependency parse of the clue text or responses
+                        in CoNLL format.
 
     """
 
@@ -318,6 +345,8 @@ class Clue:
         self.tag_obj = bs4_tag
         self.game = game
         self.round_ = round_
+        self.text_conll = None
+        self.responses_conll = None
         self._set_text()
         self._set_responses()
         if round_ != 'final_jeopardy_round':
@@ -388,6 +417,31 @@ class Clue:
         else:
             raise ValueError(f"Unknown method argument {method}")
 
+    def conll(self, parser, txt='text', style=10):
+        if type(parser) != CoreNLPDependencyParser:
+            raise TypeError('Parser must be a CoreNLP Dependency Parser.')
+        if txt == 'text':
+            # CoNLL format for clue text.
+            txt = self.text
+            p,=parser.raw_parse(txt)
+            self.text_conll = p.to_conll(style)
+            return(self.text_conll)
+        elif txt == 'responses':
+            responses_conll = []
+            for r in self.responses:
+                contestant = r[0]
+                text = r[1]
+                if text == '':
+                    continue
+                #print(self.order_num)
+                #print(contestant,repr(text))
+                p,=parser.raw_parse(text)
+                conll = p.to_conll(style)
+                tup = (contestant,conll)
+                responses_conll.append(tup)
+            self.responses_conll = responses_conll
+            return(responses_conll)
+
     def _load(self,game,**kwargs):
         """Set public attributes from JSON input"""
         self.game = game
@@ -398,6 +452,8 @@ class Clue:
         self.column = kwargs['column']
         self.target = kwargs['target']
         self.annotation = kwargs['annotation']
+        self.text_conll = kwargs['text_conll']
+        self.responses_conll = kwargs['responses_conll']
         if self.round_ != 'final_jeopardy_round':
             self.order_num = kwargs['order_num']
             self.daily_double = kwargs['daily_double']
@@ -481,12 +537,14 @@ class Clue:
                 self._correct_.append((player,True))
             elif response[0] == 'wrong':
                 self._correct_.append((player,False))
-        quotation = re.findall(r'\((.*?)\)',annotation)
+        quotation = re.findall(r'\((.*?)\)',self.annotation)  #not sure if self.annotation or annotation is correct
         self.responses=[]
         for match in quotation:
             msplit = match.split(':')
             speaker = msplit[0]
             speech = ':'.join(msplit[1:])
+            if '[*]' in speech:
+                speech = speech.replace(r'[*]',self.target)
             self.responses.append((speaker.strip(),speech.strip()))
 
     def _set_value(self):
@@ -533,21 +591,23 @@ class Clue:
                 'target':self.target,
                 'annotation':self.annotation,
             }
-            return(dictionary)
-        dictionary = {
-            'round_':self.round_,
-            'order_num':self.order_num,
-            'daily_double':self.daily_double,
-            'value':self.value,
-            'text':self.text,
-            'row':self.row,
-            'column':self.column,
-            'category':self.category,
-            'target':self.target,
-            'annotation':self.annotation,
-            'correct':self._correct_,
-            'responses':self.responses,
+        else:
+            dictionary = {
+                'round_':self.round_,
+                'order_num':self.order_num,
+                'daily_double':self.daily_double,
+                'value':self.value,
+                'text':self.text,
+                'row':self.row,
+                'column':self.column,
+                'category':self.category,
+                'target':self.target,
+                'annotation':self.annotation,
+                'correct':self._correct_,
+                'responses':self.responses,
         }
+        dictionary['text_conll'] = self.text_conll
+        dictionary['responses_conll'] = self.responses_conll
         return(dictionary)
 
 class FinalJeopardyClue(Clue):
@@ -583,7 +643,7 @@ class FinalJeopardyClue(Clue):
         count = 0
         fj_data = []
         response = []
-        print(self.annotation)
+        #print(self.annotation)
         for match in matches:
             response.append(match)
             count+=1
@@ -592,13 +652,13 @@ class FinalJeopardyClue(Clue):
                 fj_data.append(response)
                 response=[]
         self.contestants = [x[0][1] for x in fj_data]
-        self.responses = [x[1][1] for x in fj_data]
-        self.wagers = [x[2][1] for x in fj_data]
+        self.responses = [(x[0][1],x[1][1]) for x in fj_data]
+        self.wagers = [int(x[2][1].replace(',','').strip('$')) for x in fj_data]
         correct = [x[0][0] for x in fj_data]
-        print(self.contestants)
-        print(self.responses)
-        print(self.wagers)
-        print(correct)
+        #print(self.contestants)
+        #print(self.responses)
+        #print(self.wagers)
+        #print(correct)
         correctval = []
         for value in correct:
             if value == 'wrong':
@@ -607,8 +667,8 @@ class FinalJeopardyClue(Clue):
                 correctval.append(True)
             else:
                 raise ValueError('Response neither right nor wrong?')
-        print(correctval)
-        print(repr(fj_data))
+        #print(correctval)
+        #print(repr(fj_data))
         self._correct_ = []
         for i in range(len(self.contestants)):
             cont = self.contestants[i]
@@ -621,7 +681,7 @@ class FinalJeopardyClue(Clue):
                     val
                 )
             )
-        print(self._correct_)
+        #print(self._correct_)
 
     def correct(self,method='any',contestant=None):
         """Extends Clue.correct() to retrieve particular contestant responses.
@@ -683,8 +743,9 @@ class Contestant():
     def _update_series(self, clue, resp, i, fj = False):
         guessers = [x[0] for x in resp]
         if fj == True:
-            print(resp)
-            print(guessers)
+            pass
+            #print(resp)
+            #print(guessers)
         if self.first_name in guessers:
             tv = [x[1] for x in resp if x[0] == self.first_name][0]
             if fj == True:
