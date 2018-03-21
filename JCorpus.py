@@ -138,7 +138,7 @@ class Scraper():
                 game.conll(self.jparse.dep_parser)
             self.games.append(game)
 
-    def save(self,fname='JeopardyData.json'):
+    def save(self,fname='JeopardyData.json',sub_files=False):
         """Output the data to a JSON file.
 
         Saves all public attributes of Game, Clue, and FinalJeopardyClue
@@ -149,6 +149,14 @@ class Scraper():
         serial = []
         for game in self.games:
             serial.append(game.__dict__())
+        if sub_files:
+            years_dict = self._games_by_year(serial)
+            for y in years_dict:
+                out = json.dumps(years_dict[y])
+                fname = 'JeopardyGames_'+y+'.json'
+                with open(fname,'w') as f:
+                    f.write(out)
+            return()
         json_output = json.dumps(serial)
         with open(fname,'w') as f:
             f.write(json_output)
@@ -160,6 +168,15 @@ class Scraper():
         self.games = []
         for game in json_input:
             self.games.append(Game.Game(load=True,**game))
+
+    def _games_by_year(self,l):
+        d = {}
+        for game in l:
+            y = game['year']
+            if y not in d:
+                d[y] = []
+            d[y].append(game)
+        return(d)
 
     def _checkEnd(self, source, id_):
         """Check to see if the requested page throws an error."""
